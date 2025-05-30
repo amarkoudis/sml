@@ -1,0 +1,171 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page header with actions -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-6 mb-3 mb-md-0">
+                    <h1 class="h3 mb-0">{% if is_edit_mode %}Edit{% else %}New{% endif %} Company</h1>
+                    <p class="text-muted mt-1">{% if is_edit_mode %}Edit existing{% else %}Add a new{% endif %} company to your database</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <a href="{{ url_for('company_list') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left me-1"></i> Back to Companies
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Company Form Card -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-white">
+            <h5 class="card-header-title">Company Information</h5>
+        </div>
+        <div class="card-body">
+            <form action="{% if is_edit_mode %}{{ url_for('edit_company', company_id=company.companyid) }}{% else %}{{ url_for('create_company') }}{% endif %}" method="POST" class="needs-validation" enctype="multipart/form-data" novalidate>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                
+                <!-- General Information -->
+                <h6 class="mb-3">General Information</h6>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="companyname" class="form-label">Company Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="companyname" name="companyname" value="{% if is_edit_mode %}{{ company.companyname }}{% endif %}" required>
+                        <div class="invalid-feedback">
+                            Please provide a company name
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="vatno" class="form-label">VAT Number</label>
+                        <input type="text" class="form-control" id="vatno" name="vatno" value="{% if is_edit_mode %}{{ company.vatno }}{% endif %}">
+                    </div>
+                </div>
+                
+                <!-- Company Logo Section -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <label for="company_logo" class="form-label">Company Logo</label>
+                        <input type="file" class="form-control" id="company_logo" name="company_logo" accept="image/*">
+                        <div class="form-text">Upload a logo image (PNG, JPG, or GIF)</div>
+                    </div>
+                    <div class="col-md-6">
+                        {% if is_edit_mode and company.company_logo %}
+                        <div class="mt-2">
+                            <label class="form-label">Current Logo</label>
+                            <div class="d-flex align-items-center">
+                                <img src="{{ url_for('static', filename='uploads/logos/' + company.company_logo) }}" 
+                                     alt="Company Logo" class="img-thumbnail" style="max-height: 100px; max-width: 200px;">
+                                <div class="ms-3">
+                                    <small class="d-block text-muted">{{ company.company_logo }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <label for="companyaddress" class="form-label">Address</label>
+                        <textarea class="form-control" id="companyaddress" name="companyaddress" rows="3">{% if is_edit_mode %}{{ company.companyaddress }}{% endif %}</textarea>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="companyphone" class="form-label">Phone</label>
+                        <input type="text" class="form-control" id="companyphone" name="companyphone" value="{% if is_edit_mode %}{{ company.companyphone }}{% endif %}">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="companyemail" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="companyemail" name="companyemail" value="{% if is_edit_mode %}{{ company.companyemail }}{% endif %}">
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="companyweb" class="form-label">Website</label>
+                        <input type="url" class="form-control" id="companyweb" name="companyweb" value="{% if is_edit_mode %}{{ company.companyweb }}{% endif %}">
+                    </div>
+                </div>
+                
+                <!-- Banking Information -->
+                <h6 class="mb-3 mt-4">Banking Information</h6>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="bankid" class="form-label">Bank</label>
+                        <select class="form-select" id="bankid" name="bankid">
+                            <option value="">Select bank</option>
+                            {% for bank in banks %}
+                            <option value="{{ bank.bankid }}" {% if is_edit_mode and company.bankid == bank.bankid %}selected{% endif %}>{{ bank.bankname }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="companydebitaccount" class="form-label">Debit Account</label>
+                        <input type="text" class="form-control" id="companydebitaccount" name="companydebitaccount" value="{% if is_edit_mode %}{{ company.companydebitaccount }}{% endif %}">
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="companyiban" class="form-label">IBAN</label>
+                        <input type="text" class="form-control" id="companyiban" name="companyiban" value="{% if is_edit_mode %}{{ company.companyiban }}{% endif %}">
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="beneficiary" class="form-label">Beneficiary</label>
+                        <input type="text" class="form-control" id="beneficiary" name="beneficiary" value="{% if is_edit_mode %}{{ company.beneficiary }}{% endif %}">
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="transactiontype" class="form-label">Transaction Type</label>
+                        <select class="form-select" id="transactiontype" name="transactiontype">
+                            <option value="">Select transaction type</option>
+                            <option value="S" {% if is_edit_mode and company.transactiontype == 'S' %}selected{% endif %}>SEPA</option>
+                            <option value="D" {% if is_edit_mode and company.transactiontype == 'D' %}selected{% endif %}>Direct</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="paymentpolicy" class="form-label">Payment Policy</label>
+                        <textarea class="form-control" id="paymentpolicy" name="paymentpolicy" rows="2">{% if is_edit_mode %}{{ company.paymentpolicy }}{% endif %}</textarea>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-end mt-4">
+                    <a href="{{ url_for('company_list') }}" class="btn btn-outline-secondary me-2">Cancel</a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i> {% if is_edit_mode %}Update{% else %}Save{% endif %} Company
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Form validation
+        const forms = document.querySelectorAll('.needs-validation');
+        
+        Array.from(forms).forEach(form => {
+            form.addEventListener('submit', event => {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    });
+</script>
+{% endblock %} 

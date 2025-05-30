@@ -1,0 +1,124 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="container-fluid">
+        <!-- Meta tag to prevent new window -->
+        <meta name="referrer" content="same-origin">
+        
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">
+                <i class="fas fa-clock text-primary"></i>
+                Shifts for {{ event.EventName }}
+            </h1>
+            <div>
+                <a href="{{ url_for('event_list') }}" class="btn btn-secondary mr-2">
+                    <i class="fas fa-arrow-left"></i> Back to Events
+                </a>
+                <a href="{{ url_for('create_shift_unified', event_id=event.EventID) }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add Shift
+                </a>
+            </div>
+        </div>
+
+        <!-- Event Info Card -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Event:</strong> {{ event.EventName }}</p>
+                        <p><strong>Location:</strong> {{ event.EventLocation or 'Not specified' }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Start:</strong> {{ event.EventStart.strftime('%Y-%m-%d %H:%M') }}</p>
+                        <p><strong>End:</strong> {{ event.EventEnd.strftime('%Y-%m-%d %H:%M') }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Shifts List -->
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Shift Name</th>
+                                <th>Start Time</th>
+                                <th>End Time</th>
+                                <th>Type</th>
+                                <th>Employees</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for shift in shifts %}
+                            <tr>
+                                <td>{{ shift.shiftname }}</td>
+                                <td>{{ shift.shiftstart.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>{{ shift.shiftend.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>
+                                    <span class="badge {% if shift.shifttype == 'Full' %}badge-primary{% else %}badge-info{% endif %}">
+                                        {{ shift.shifttype }}
+                                    </span>
+                                </td>
+                                <td>{{ shift.employee_count }}</td>
+                                <td>
+                                    <form action="{{ url_for('assign_employees_to_shift', shift_id=shift.shiftid, event_id=event.EventID) }}" method="GET" style="display: inline;">
+                                        <button type="submit" class="btn btn-sm btn-success text-decoration-none">Manage Staff</button>
+                                    </form>
+                                    <a href="{{ url_for('edit_shift', shift_id=shift.shiftid) }}" class="btn btn-sm btn-info">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteShiftModal{{ shift.shiftid }}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    
+                                    <!-- Delete Shift Modal -->
+                                    <div class="modal fade" id="deleteShiftModal{{ shift.shiftid }}" tabindex="-1" aria-labelledby="deleteShiftModalLabel" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title" id="deleteShiftModalLabel">Confirm Delete</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    Are you sure you want to delete shift <strong>{{ shift.shiftname }}</strong>?
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                    <form action="{{ url_for('delete_shift', shift_id=shift.shiftid) }}" method="POST">
+                                                        <button type="submit" class="btn btn-danger">Delete</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center">No shifts found for this event.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    $('.manage-staff-btn').on('click', function() {
+        var url = $(this).data('url');
+        window.location.href = url;
+    });
+});
+</script>
+{% endblock %} 

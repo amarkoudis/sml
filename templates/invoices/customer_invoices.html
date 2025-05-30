@@ -1,0 +1,151 @@
+{% extends 'layout.html' %}
+
+{% block title %}{{ customer.customername }} - Invoices{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1>{{ customer.customername }} - Invoices</h1>
+            <p class="text-muted mb-0">
+                <i class="fas fa-envelope me-1"></i> {{ customer.customeremail or 'No email provided' }} |
+                <i class="fas fa-phone me-1"></i> {{ customer.customerphone or 'No phone provided' }}
+            </p>
+        </div>
+        <div>
+            <a href="{{ url_for('invoice_list') }}" class="btn btn-secondary me-2">
+                <i class="fas fa-arrow-left"></i> Back to All Invoices
+            </a>
+            <a href="{{ url_for('invoice_create') }}?customer={{ customer.customerid }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Create New Invoice
+            </a>
+        </div>
+    </div>
+
+    <!-- Invoices Table -->
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">All Invoices for {{ customer.customername }}</h5>
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Invoice Number</th>
+                            <th>Event</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th>Total</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for invoice in invoices %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('invoice_view', invoice_id=invoice.invoice_id) }}">
+                                    {{ invoice.invoice_number }}
+                                </a>
+                            </td>
+                            <td>
+                                {% if invoice.event_id %}
+                                <a href="{{ url_for('event_invoices', event_id=invoice.event_id) }}">
+                                    {{ invoice.event_name or 'No name' }}
+                                </a>
+                                {% else %}
+                                No event
+                                {% endif %}
+                            </td>
+                            <td>{{ invoice.invoice_date.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                {% if invoice.status == 'Draft' %}
+                                <span class="badge bg-secondary">Draft</span>
+                                {% elif invoice.status == 'Sent' %}
+                                <span class="badge bg-primary">Sent</span>
+                                {% elif invoice.status == 'Paid' %}
+                                <span class="badge bg-success">Paid</span>
+                                {% elif invoice.status == 'Cancelled' %}
+                                <span class="badge bg-danger">Cancelled</span>
+                                {% endif %}
+                            </td>
+                            <td>€{{ "%.2f"|format(invoice.total) }}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="{{ url_for('invoice_view', invoice_id=invoice.invoice_id) }}" class="btn btn-sm btn-info" title="View">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('invoice_edit', invoice_id=invoice.invoice_id) }}" class="btn btn-sm btn-warning" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{{ url_for('send_invoice_email', invoice_id=invoice.invoice_id) }}" class="btn btn-sm btn-primary" title="Send Email">
+                                        <i class="fas fa-envelope"></i>
+                                    </a>
+                                    {% if invoice.status == 'Draft' %}
+                                    <button type="button" class="btn btn-sm btn-danger" onclick="deleteInvoice({{ invoice.invoice_id }})" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center">No invoices found for this customer.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function deleteInvoice(invoiceId) {
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "You won't be able to revert this!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Yes, delete it!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(`/invoice/${invoiceId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire(
+                        'Deleted!',
+                        'Invoice has been deleted.',
+                        'success'
+                    ).then(() => {
+                        window.location.reload();
+                    });
+                } else {
+                    Swal.fire(
+                        'Error!',
+                        data.message || 'Failed to delete invoice.',
+                        'error'
+                    );
+                }
+            })
+            .catch(error => {
+                Swal.fire(
+                    'Error!',
+                    'Failed to delete invoice.',
+                    'error'
+                );
+            });
+        }
+    });
+}
+</script>
+{% endblock %} 

@@ -1,0 +1,786 @@
+{% extends 'layout.html' %}
+
+{% block title %}{% if is_edit_mode %}Edit{% else %}Create{% endif %} Event{% endblock %}
+
+{% block styles %}
+<style>
+    /* Event form specific styles */
+    .content-wrapper {
+        display: flex;
+        gap: 20px;
+    }
+    
+    .form-content {
+        flex: 1;
+        margin-left: 20px;
+        padding-bottom: 40px; /* Add padding at the bottom */
+        overflow-y: auto; /* Allow this section to scroll independently */
+        max-height: calc(100vh - 100px); /* Set a max height for scrolling */
+    }
+    
+    /* Override global sidebar styles */
+    .content-wrapper .form-sidebar {
+        position: sticky;
+        top: 80px; /* Adjust this value based on your header height */
+        width: auto !important;
+        min-width: 240px;
+        height: calc(100vh - 120px);
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        z-index: 10;
+        align-self: flex-start; /* Ensures the sidebar stays at the top */
+    }
+    
+    .content-wrapper .sidebar-header {
+        padding: 20px;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .content-wrapper .sidebar-title {
+        margin: 0;
+        color: #1e293b;
+        font-weight: 600;
+        display: block !important;
+    }
+    
+    .content-wrapper .sidebar-nav {
+        padding: 10px 0;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+    }
+    
+    .content-wrapper .nav-item {
+        display: flex !important;
+        align-items: center;
+        padding: 12px 20px;
+        color: #475569;
+        text-decoration: none;
+        transition: all 0.2s;
+        font-size: 0.95rem;
+        border-left: 3px solid transparent;
+        justify-content: flex-start !important;
+    }
+    
+    .content-wrapper .nav-item:hover {
+        background: #f8fafc;
+        color: #1e293b;
+    }
+    
+    .content-wrapper .nav-item.active {
+        background: #f0f7ff;
+        color: #2563eb;
+        border-left: 3px solid #2563eb;
+        font-weight: 500;
+    }
+    
+    .content-wrapper .nav-item i {
+        width: 20px;
+        margin-right: 12px !important;
+        font-size: 1rem;
+        text-align: center;
+    }
+    
+    .content-wrapper .nav-text {
+        display: inline-block !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        flex: 1;
+    }
+    
+    .modern-card {
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 40px; /* Increase margin between sections */
+    }
+    
+    .card-header {
+        padding: 20px;
+        border-bottom: 1px solid #e0e0e0;
+        background: #fff;
+    }
+    
+    .card-header h4 {
+        margin: 0;
+        color: #1e293b;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+    
+    .card-body {
+        padding: 20px;
+    }
+    
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    
+    .form-group label {
+        font-weight: 500;
+        color: #475569;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-control {
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 0.75rem;
+        transition: all 0.2s;
+    }
+    
+    .form-control:focus {
+        border-color: #4f97fb;
+        box-shadow: 0 0 0 2px rgba(79, 151, 251, 0.1);
+    }
+    
+    /* Responsive table styles */
+    .table-responsive {
+        margin: 1rem 0;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .table {
+        margin-bottom: 0;
+    }
+    
+    .table th {
+        background: #f8fafc;
+        font-weight: 600;
+        color: #475569;
+    }
+    
+    .table td, .table th {
+        padding: 1rem;
+        vertical-align: middle;
+    }
+    
+    /* Button styles */
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 6px;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+    
+    .btn-primary {
+        background: #4f97fb;
+        border-color: #4f97fb;
+    }
+    
+    .btn-primary:hover {
+        background: #2d7ff7;
+        border-color: #2d7ff7;
+    }
+    
+    /* Modal styles */
+    .modal-content {
+        border-radius: 12px;
+        border: none;
+    }
+    
+    .modal-header {
+        border-bottom: 1px solid #e0e0e0;
+        padding: 1.25rem;
+    }
+    
+    .modal-body {
+        padding: 1.5rem;
+    }
+    
+    .modal-footer {
+        border-top: 1px solid #e0e0e0;
+        padding: 1.25rem;
+    }
+    
+    /* Add smooth scrolling for the entire document */
+    html {
+        scroll-behavior: smooth;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    {% include 'events/unified/sidebar.html' %}
+    
+    <!-- Fix navigation script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Fix sidebar navigation
+            document.querySelectorAll('.form-sidebar .nav-item[data-section]').forEach(function(item) {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Update active state
+                    document.querySelectorAll('.form-sidebar .nav-item').forEach(function(navItem) {
+                        navItem.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                    
+                    // Get section id from href attribute
+                    const targetId = this.getAttribute('href');
+                    
+                    if (targetId && document.querySelector(targetId)) {
+                        // Scroll to the target section
+                        window.scrollTo({
+                            top: document.querySelector(targetId).offsetTop - 100,
+                            behavior: 'smooth'
+                        });
+                    }
+                });
+            });
+            
+            // Handle form actions
+            document.querySelectorAll('.form-sidebar .nav-item[data-action]').forEach(function(item) {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const action = this.dataset.action;
+                    
+                    if (action === 'save-form') {
+                        document.getElementById('event-form').submit();
+                    } else if (action === 'cancel-form') {
+                        if (confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
+                            window.location.href = '{{ url_for("event_list") }}';
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+    
+    <div class="form-content">
+        <form id="event-form" method="POST" action="{% if is_edit_mode %}{{ url_for('update_event_submit_unified', event_id=event.EventID) }}{% else %}{{ url_for('create_event_submit_unified') }}{% endif %}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" id="shifts_data" name="shifts_data" value="">
+            {% if is_edit_mode %}
+            <input type="hidden" name="event_id" value="{{ event.EventID }}">
+            {% endif %}
+            
+            <!-- Basic Information Section -->
+            <div id="section-basic" class="modern-card">
+                <div class="card-header" id="basic">
+                    <h4>Basic Information</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="Customerid">Customer</label>
+                                <select class="form-control" id="Customerid" name="Customerid" required>
+                                    <option value="">Select Customer</option>
+                                    {% for customer in customers %}
+                                    <option value="{{ customer.customerid }}" {% if event and event.Customerid == customer.customerid %}selected{% endif %}>
+                                        {{ customer.customername }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="EventName">Event Name</label>
+                                <input type="text" class="form-control" id="EventName" name="EventName" 
+                                    value="{{ event.EventName if event else '' }}" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="EventStart">Start Date & Time</label>
+                                <input type="datetime-local" class="form-control" id="EventStart" name="EventStart" 
+                                    value="{{ event.EventStart|datetimeformat if event else '' }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="EventEnd">End Date & Time</label>
+                                <input type="datetime-local" class="form-control" id="EventEnd" name="EventEnd" 
+                                    value="{{ event.EventEnd|datetimeformat if event else '' }}" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="EventDurationHours">Duration (Hours)</label>
+                                <input type="number" step="0.01" class="form-control" id="EventDurationHours" name="EventDurationHours" 
+                                    value="{{ event.EventDurationHours if event else '' }}" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="EventLocation">Location</label>
+                                <input type="text" class="form-control" id="EventLocation" name="EventLocation" 
+                                    value="{{ event.EventLocation if event else '' }}" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Staff Requirements Section -->
+            <div id="section-staff" class="modern-card">
+                <div class="card-header" id="staff">
+                    <h4>Staff Requirements</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="WaitersNeeded">Waiters Needed</label>
+                                <input type="number" class="form-control" id="WaitersNeeded" name="WaitersNeeded" 
+                                    value="{{ event.WaitersNeeded if event else '0' }}" min="0">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="BartendersNeeded">Bartenders Needed</label>
+                                <input type="number" class="form-control" id="BartendersNeeded" name="BartendersNeeded" 
+                                    value="{{ event.BartendersNeeded if event else '0' }}" min="0">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="MaleEmployees">Male Employees</label>
+                                <input type="number" class="form-control" id="MaleEmployees" name="MaleEmployees" 
+                                    value="{{ event.MaleEmployees if event else '0' }}" min="0">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="FemaleEmployees">Female Employees</label>
+                                <input type="number" class="form-control" id="FemaleEmployees" name="FemaleEmployees" 
+                                    value="{{ event.FemaleEmployees if event else '0' }}" min="0">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label for="TotalEmployees">Total Employees</label>
+                                <input type="number" class="form-control" id="TotalEmployees" name="TotalEmployees" 
+                                    value="{{ event.TotalEmployees if event else '0' }}" readonly>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Shift Management Section -->
+            <div id="section-shifts" class="modern-card">
+                <div class="card-header d-flex justify-content-between align-items-center" id="shifts">
+                    <h4>Shift Management</h4>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#shiftModal">
+                        <i class="fas fa-plus"></i> Add Shift
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table" id="shiftsTable">
+                            <thead>
+                                <tr>
+                                    <th>Start Time</th>
+                                    <th>End Time</th>
+                                    <th>Duration</th>
+                                    <th>Type</th>
+                                    <th>Assigned Employees</th>
+                                    <th>Total Hours</th>
+                                    <th style="width: 120px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Shifts will be dynamically added here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Financial Information Section -->
+            <div id="section-financial" class="modern-card">
+                <div class="card-header" id="financial">
+                    <h4>Financial Information</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="EventPerHourcost">Cost Per Hour</label>
+                                <input type="number" step="0.01" class="form-control" id="EventPerHourcost" name="EventPerHourcost" 
+                                    value="{{ event.EventPerHourcost if event else '' }}" oninput="updateFinancialTotals()">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="EventPerHourselling">Selling Price Per Hour</label>
+                                <input type="number" step="0.01" class="form-control" id="EventPerHourselling" name="EventPerHourselling" 
+                                    value="{{ event.EventPerHourselling if event else '' }}" oninput="updateFinancialTotals()">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="totalhours">Total Hours</label>
+                                <input type="number" step="0.01" class="form-control" id="totalhours" name="totalhours" 
+                                    value="{{ event.totalhours if event else '0.00' }}" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="totalcost">Total Cost</label>
+                                <input type="number" step="0.01" class="form-control" id="totalcost" name="totalcost" 
+                                    value="{{ event.totalcost if event else '0.00' }}" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="totalselling">Total Selling Price</label>
+                                <input type="number" step="0.01" class="form-control" id="totalselling" name="totalselling" 
+                                    value="{{ event.totalselling if event else '0.00' }}" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="totalprofit">Total Profit</label>
+                                <input type="number" step="0.01" class="form-control" id="totalprofit" name="totalprofit" 
+                                    value="{{ event.totalprofit if event else '0.00' }}" readonly>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Event Status Section -->
+            <div id="section-notes" class="modern-card">
+                <div class="card-header" id="notes">
+                    <h4>Notes</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label for="notes">Additional Notes</label>
+                                <textarea class="form-control" id="notes" name="notes" rows="4">{{ event.notes if event else '' }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Shift Modal -->
+<div class="modal fade" id="shiftModal" tabindex="-1" aria-labelledby="shiftModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="shiftModalLabel">Add Shift</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="shift-form">
+                    <input type="hidden" id="shift-id" value="">
+                    <div class="mb-3">
+                        <label for="shift-name" class="form-label">Shift Name</label>
+                        <input type="text" class="form-control" id="shift-name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="shift-type" class="form-label">Shift Type</label>
+                        <select class="form-control" id="shift-type" required>
+                            <option value="Full">Full</option>
+                            <option value="Partial">Partial</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="shift-start" class="form-label">Start Time</label>
+                        <input type="datetime-local" class="form-control" id="shift-start" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="shift-end" class="form-label">End Time</label>
+                        <input type="datetime-local" class="form-control" id="shift-end" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="save-shift-btn">Save Shift</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Assign Employees Modal -->
+<div class="modal fade" id="assignEmployeesModal" tabindex="-1" aria-labelledby="assignEmployeesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="assignEmployeesModalLabel">Assign Employees to Shift</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info mb-3" id="shiftInfo">
+                    <!-- Shift info will be populated here -->
+                </div>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0">Select Employees</h6>
+                        <button type="button" id="selectAllEmployees" class="btn btn-sm btn-outline-primary">Select All</button>
+                    </div>
+                </div>
+                
+                <form id="assignEmployeesForm">
+                    <input type="hidden" id="assign-shift-id" value="">
+                    <input type="hidden" id="assign-shift-type" value="">
+                    <div class="table-responsive">
+                        <table class="table table-striped" id="employeesTable">
+                            <thead>
+                                <tr>
+                                    <th width="50px">Select</th>
+                                    <th>Employee Name</th>
+                                    <th>Role</th>
+                                    <th>Gender</th>
+                                    <th width="150px" id="hoursHeader">Hours</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Employee list will be populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="save-assignments-btn">Save Assignments</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Main initialization function that runs when DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set up navigation
+        setupNavigation();
+        
+        // Initialize data
+        initializeData();
+        
+        // Set up form event listeners
+        setupFormEventListeners();
+        
+        // Initial calculations
+        updateTotal();
+        updateFinancialCalculations();
+    });
+    
+    // Setup navigation functions
+    function setupNavigation() {
+        // Initialize form sections
+        const sections = ['basic', 'staff', 'shifts', 'financial', 'notes'];
+        const navItems = document.querySelectorAll('.form-sidebar .nav-item[data-section]');
+        
+        // Handle section navigation - scroll to section instead of hiding/showing
+        navItems.forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Update active state
+                navItems.forEach(navItem => navItem.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Get section id from href attribute
+                const targetId = this.getAttribute('href');
+                
+                if (targetId && document.querySelector(targetId)) {
+                    // Scroll to the target section
+                    window.scrollTo({
+                        top: document.querySelector(targetId).offsetTop - 100,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+        
+        // Handle form actions
+        document.querySelectorAll('.form-sidebar .nav-item[data-action]').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                const action = this.dataset.action;
+                
+                if (action === 'save-form') {
+                    // Prepare shifts data before submitting
+                    prepareShiftsData();
+                    document.getElementById('event-form').submit();
+                } else if (action === 'cancel-form') {
+                    if (confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
+                        window.location.href = '{{ url_for("event_list") }}';
+                    }
+                }
+            });
+        });
+        
+        // Update active sidebar item on scroll
+        window.addEventListener('scroll', function() {
+            const scrollPosition = window.scrollY;
+            
+            // Check each section's position
+            document.querySelectorAll('[id^="section-"]').forEach(function(section) {
+                const offset = section.offsetTop - 120;
+                
+                if (scrollPosition >= offset) {
+                    const id = section.id;
+                    navItems.forEach(navItem => navItem.classList.remove('active'));
+                    document.querySelector(`.nav-item[data-section="${id}"]`).classList.add('active');
+                }
+            });
+        });
+    }
+    
+    // Initialize data from template
+    function initializeData() {
+        // Shift management functionality
+        window.shifts = [];
+        
+        {% if event and shifts %}
+        // Load existing shifts
+        window.shifts = {{ shifts|tojson|safe }};
+        console.log("Loaded shifts:", shifts);  // Debug log
+        renderShifts();
+        {% endif %}
+        
+        // Employee data from server
+        window.employees = [];
+        
+        {% if employees %}
+        window.employees = {{ employees|tojson|safe }};
+        {% endif %}
+    }
+    
+    // Set up form event listeners
+    function setupFormEventListeners() {
+        // Prepopulate shift modal with event times
+        document.querySelector('[data-bs-target="#shiftModal"]').addEventListener('click', function() {
+            const eventStart = document.getElementById('EventStart').value;
+            const eventEnd = document.getElementById('EventEnd').value;
+            
+            if (eventStart) {
+                document.getElementById('shift-start').value = eventStart;
+            }
+            if (eventEnd) {
+                document.getElementById('shift-end').value = eventEnd;
+            }
+            
+            // Clear other fields for a new shift
+            document.getElementById('shift-id').value = '';
+            document.getElementById('shift-name').value = '';
+            document.getElementById('shift-type').value = 'Full';
+        });
+        
+        // Save shift button handler
+        document.getElementById('save-shift-btn').addEventListener('click', function() {
+            const shiftForm = document.getElementById('shift-form');
+            
+            // Simple validation
+            if (!shiftForm.checkValidity()) {
+                shiftForm.reportValidity();
+                return;
+            }
+            
+            const shiftId = document.getElementById('shift-id').value || Date.now().toString();
+            const shiftName = document.getElementById('shift-name').value;
+            const shiftType = document.getElementById('shift-type').value;
+            const shiftStart = document.getElementById('shift-start').value;
+            const shiftEnd = document.getElementById('shift-end').value;
+            
+            // Validate start and end times
+            const start = new Date(shiftStart);
+            const end = new Date(shiftEnd);
+            if (start >= end) {
+                alert('Shift end time must be after start time.');
+                return;
+            }
+            
+            // Create shift object
+            const shift = {
+                id: shiftId,
+                name: shiftName,
+                type: shiftType,
+                start: shiftStart,
+                end: shiftEnd,
+                duration: ((end - start) / (1000 * 60 * 60)).toFixed(2) // hours
+            };
+            
+            // Update or add shift
+            const existingIndex = shifts.findIndex(s => s.id === shiftId);
+            if (existingIndex >= 0) {
+                // Preserve existing logic...
+                if (shifts[existingIndex].employees) {
+                    shift.employees = shifts[existingIndex].employees;
+                    
+                    // Recalculate totalAssignedHours if needed
+                    if (shift.type === 'Full' && shifts[existingIndex].employees.length > 0) {
+                        shift.totalAssignedHours = shifts[existingIndex].employees.length * parseFloat(shift.duration);
+                    } else if (shifts[existingIndex].employees.length > 0) {
+                        // Keep the existing hours for each employee, but adjust them if needed
+                        shift.employees.forEach(emp => {
+                            // If the shift duration is now less than the assigned hours, cap it
+                            if (parseFloat(emp.hours) > parseFloat(shift.duration)) {
+                                emp.hours = parseFloat(shift.duration);
+                            }
+                        });
+                        
+                        // Recalculate the total
+                        shift.totalAssignedHours = shift.employees.reduce(
+                            (sum, emp) => sum + parseFloat(emp.hours), 0
+                        );
+                    }
+                }
+                shifts[existingIndex] = shift;
+            } else {
+                shifts.push(shift);
+            }
+            
+            // Update UI and close modal
+            renderShifts();
+            const modal = bootstrap.Modal.getInstance(document.getElementById('shiftModal'));
+            modal.hide();
+            
+            // Recalculate total hours
+            updateTotalHours();
+        });
+
+        // Set up cost and selling price event listeners
+        document.getElementById('EventPerHourcost').addEventListener('input', updateFinancialTotals);
+        document.getElementById('EventPerHourselling').addEventListener('input', updateFinancialTotals);
+
+        // Set up other event listeners
+        ['WaitersNeeded', 'BartendersNeeded', 'MaleEmployees', 'FemaleEmployees'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updateTotal);
+        });
+
+        ['EventStart', 'EventEnd'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updateFinancialCalculations);
+        });
+    }
+
+    // Keep the rest of your existing functions below (renderShifts, editShift, deleteShift, etc.)
+    // ...
+</script>
+{% endblock %} 

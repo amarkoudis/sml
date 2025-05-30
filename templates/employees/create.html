@@ -1,0 +1,55 @@
+{% extends 'layout.html' %}
+
+{% block title %}Create Employee{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h2 class="mb-4">Create New Employee</h2>
+    <form method="POST" action="{{ url_for('create_employee') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="firstname" class="form-label">First Name</label>
+                <input type="text" class="form-control" id="firstname" name="firstname" required>
+            </div>
+            <div class="col-md-6">
+                <label for="lastname" class="form-label">Last Name</label>
+                <input type="text" class="form-control" id="lastname" name="lastname" required>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" class="form-control" id="email" name="email">
+            </div>
+            <div class="col-md-6">
+                <label for="phone" class="form-label">Phone</label>
+                <input type="text" class="form-control" id="phone" name="phone">
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="employeeroleid" class="form-label">Role</label>
+                <select class="form-select" id="employeeroleid" name="employeeroleid" required>
+                    <option value="">Select Role</option>
+                    {% for role in roles %}
+                    <option value="{{ role.employeeroleid }}">{{ role.employeerolename }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="gender" class="form-label">Gender</label>
+                <select class="form-select" id="gender" name="gender" required>
+                    <option value="">Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                </select>
+            </div>
+        </div>
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary">Create Employee</button>
+            <a href="{{ url_for('employee_list') }}" class="btn btn-secondary ms-2">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %} 

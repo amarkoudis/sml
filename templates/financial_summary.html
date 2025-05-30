@@ -1,0 +1,504 @@
+{% extends "layout.html" %}
+
+{% block title %}Financial Summary{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="container-fluid">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h1 class="page-title">
+                        <i class="fas fa-chart-line text-primary me-2"></i>
+                        Financial Summary
+                    </h1>
+                    <p class="page-subtitle">Review your business performance metrics</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary me-2">
+                        <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
+                    </a>
+                    <a href="{{ url_for('event_list') }}" class="btn btn-primary">
+                        <i class="fas fa-list me-1"></i> View All Events
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Financial Summary Tabs -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-body p-0">
+                <ul class="nav nav-tabs nav-fill" id="financialTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active fw-semibold py-3" id="summary-tab" data-bs-toggle="tab" data-bs-target="#summary-tab-pane" type="button" role="tab" aria-controls="summary-tab-pane" aria-selected="true">
+                            <i class="fas fa-file-invoice-dollar me-2"></i>Summary
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-semibold py-3" id="past-tab" data-bs-toggle="tab" data-bs-target="#past-tab-pane" type="button" role="tab" aria-controls="past-tab-pane" aria-selected="false">
+                            <i class="fas fa-history me-2"></i>Past Events
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-semibold py-3" id="upcoming-tab" data-bs-toggle="tab" data-bs-target="#upcoming-tab-pane" type="button" role="tab" aria-controls="upcoming-tab-pane" aria-selected="false">
+                            <i class="fas fa-calendar-alt me-2"></i>Upcoming
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-semibold py-3" id="profitable-tab" data-bs-toggle="tab" data-bs-target="#profitable-tab-pane" type="button" role="tab" aria-controls="profitable-tab-pane" aria-selected="false">
+                            <i class="fas fa-trophy me-2"></i>Most Profitable
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+                
+        <div class="tab-content pt-3" id="financialTabsContent">
+            <!-- Summary Tab -->
+            <div class="tab-pane fade show active" id="summary-tab-pane" role="tabpanel" aria-labelledby="summary-tab" tabindex="0">
+                <div class="row gx-4 mb-4">
+                    <div class="col-lg-6 mb-4">
+                        <div class="card h-100 border-0 shadow-sm">
+                            <div class="card-header bg-info text-white py-3">
+                                <h5 class="mb-0 d-flex align-items-center">
+                                    <i class="fas fa-history me-2"></i>
+                                    Past 3 Months 
+                                    <span class="badge bg-light text-dark ms-2">{{ past_financial.total_events }} Events</span>
+                                </h5>
+                            </div>
+                            <div class="card-body p-4">
+                                <div class="row mb-4">
+                                    <div class="col-sm-4 text-muted fs-5">Total Cost:</div>
+                                    <div class="col-sm-8 text-end fw-bold fs-5">£{{ "%.2f"|format(past_financial.total_cost|float) }}</div>
+                                </div>
+                                <div class="row mb-4">
+                                    <div class="col-sm-4 text-muted fs-5">Total Revenue:</div>
+                                    <div class="col-sm-8 text-end fw-bold fs-5">£{{ "%.2f"|format(past_financial.total_selling|float) }}</div>
+                                </div>
+                                <div class="row mb-4">
+                                    <div class="col-sm-4 text-muted fs-5">Total Profit:</div>
+                                    <div class="col-sm-8 text-end fw-bold text-success fs-5">£{{ "%.2f"|format(past_financial.total_profit|float) }}</div>
+                                </div>
+                                
+                                <hr class="my-4">
+                                <div class="row">
+                                    <div class="col-sm-4 text-muted fs-5">Profit Margin:</div>
+                                    <div class="col-sm-8 text-end fw-bold fs-5 
+                                    {% if past_financial.total_selling and past_financial.total_selling|float > 0 %}
+                                        {{ 'text-success' if (past_financial.total_profit|float / past_financial.total_selling|float * 100) > 20 else 'text-warning' }}
+                                    {% endif %}">
+                                        {% if past_financial.total_selling and past_financial.total_selling|float > 0 %}
+                                            {{ "%.1f"|format(past_financial.total_profit|float / past_financial.total_selling|float * 100) }}%
+                                        {% else %}
+                                            0.0%
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 mb-4">
+                        <div class="card h-100 border-0 shadow-sm">
+                            <div class="card-header bg-primary text-white py-3">
+                                <h5 class="mb-0 d-flex align-items-center">
+                                    <i class="fas fa-calendar-alt me-2"></i>
+                                    Upcoming Events
+                                    <span class="badge bg-light text-dark ms-2">{{ upcoming_financial.total_events }} Events</span>
+                                </h5>
+                            </div>
+                            <div class="card-body p-4">
+                                <div class="row mb-4">
+                                    <div class="col-sm-4 text-muted fs-5">Expected Cost:</div>
+                                    <div class="col-sm-8 text-end fw-bold fs-5">£{{ "%.2f"|format(upcoming_financial.total_cost|float) }}</div>
+                                </div>
+                                <div class="row mb-4">
+                                    <div class="col-sm-4 text-muted fs-5">Expected Revenue:</div>
+                                    <div class="col-sm-8 text-end fw-bold fs-5">£{{ "%.2f"|format(upcoming_financial.total_selling|float) }}</div>
+                                </div>
+                                <div class="row mb-4">
+                                    <div class="col-sm-4 text-muted fs-5">Expected Profit:</div>
+                                    <div class="col-sm-8 text-end fw-bold text-success fs-5">£{{ "%.2f"|format(upcoming_financial.total_profit|float) }}</div>
+                                </div>
+                                
+                                <hr class="my-4">
+                                <div class="row">
+                                    <div class="col-sm-4 text-muted fs-5">Profit Margin:</div>
+                                    <div class="col-sm-8 text-end fw-bold fs-5 
+                                    {% if upcoming_financial.total_selling and upcoming_financial.total_selling|float > 0 %}
+                                        {{ 'text-success' if (upcoming_financial.total_profit|float / upcoming_financial.total_selling|float * 100) > 20 else 'text-warning' }}
+                                    {% endif %}">
+                                        {% if upcoming_financial.total_selling and upcoming_financial.total_selling|float > 0 %}
+                                            {{ "%.1f"|format(upcoming_financial.total_profit|float / upcoming_financial.total_selling|float * 100) }}%
+                                        {% else %}
+                                            0.0%
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-light py-3">
+                                <h5 class="mb-0">Comparison Chart</h5>
+                            </div>
+                            <div class="card-body p-4">
+                                <div style="height: 400px;">
+                                    <canvas id="summaryComparisonChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Past Events Tab -->
+            <div class="tab-pane fade" id="past-tab-pane" role="tabpanel" aria-labelledby="past-tab" tabindex="0">
+                <div class="card border-0 shadow mb-4">
+                    <div class="card-header bg-light py-3">
+                        <h5 class="mb-0">Financial Data for Events in the Past 3 Months</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div style="height: 500px;">
+                            <canvas id="pastEventsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card border-0 shadow">
+                            <div class="card-header bg-info text-white py-3">
+                                <h5 class="mb-0">Financial Summary</h5>
+                            </div>
+                            <div class="card-body p-4">
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <div class="border-start border-info border-4 ps-3">
+                                            <h6 class="text-muted mb-1">Total Cost</h6>
+                                            <h3 class="fw-bold">£{{ "%.2f"|format(past_financial.total_cost|float) }}</h3>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <div class="border-start border-primary border-4 ps-3">
+                                            <h6 class="text-muted mb-1">Total Revenue</h6>
+                                            <h3 class="fw-bold">£{{ "%.2f"|format(past_financial.total_selling|float) }}</h3>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <div class="border-start border-success border-4 ps-3">
+                                            <h6 class="text-muted mb-1">Total Profit</h6>
+                                            <h3 class="fw-bold text-success">£{{ "%.2f"|format(past_financial.total_profit|float) }}</h3>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Upcoming Events Tab -->
+            <div class="tab-pane fade" id="upcoming-tab-pane" role="tabpanel" aria-labelledby="upcoming-tab" tabindex="0">
+                <div class="card border-0 shadow mb-4">
+                    <div class="card-header bg-light py-3">
+                        <h5 class="mb-0">Financial Data for Upcoming Events</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div style="height: 500px;">
+                            <canvas id="upcomingEventsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card border-0 shadow">
+                            <div class="card-header bg-primary text-white py-3">
+                                <h5 class="mb-0">Financial Forecast</h5>
+                            </div>
+                            <div class="card-body p-4">
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <div class="border-start border-info border-4 ps-3">
+                                            <h6 class="text-muted mb-1">Expected Cost</h6>
+                                            <h3 class="fw-bold">£{{ "%.2f"|format(upcoming_financial.total_cost|float) }}</h3>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <div class="border-start border-primary border-4 ps-3">
+                                            <h6 class="text-muted mb-1">Expected Revenue</h6>
+                                            <h3 class="fw-bold">£{{ "%.2f"|format(upcoming_financial.total_selling|float) }}</h3>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <div class="border-start border-success border-4 ps-3">
+                                            <h6 class="text-muted mb-1">Expected Profit</h6>
+                                            <h3 class="fw-bold text-success">£{{ "%.2f"|format(upcoming_financial.total_profit|float) }}</h3>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Most Profitable Tab -->
+            <div class="tab-pane fade" id="profitable-tab-pane" role="tabpanel" aria-labelledby="profitable-tab" tabindex="0">
+                <div class="card border-0 shadow">
+                    <div class="card-header bg-light py-3">
+                        <h5 class="mb-0">Top Performing Events</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="py-3 px-4" style="min-width: 250px;">Event</th>
+                                        <th class="py-3 px-4" style="min-width: 200px;">Customer</th>
+                                        <th class="py-3 px-4 d-none d-md-table-cell" style="min-width: 150px;">Date</th>
+                                        <th class="py-3 px-4 text-end" style="min-width: 150px;">Revenue</th>
+                                        <th class="py-3 px-4 text-end d-none d-md-table-cell" style="min-width: 150px;">Cost</th>
+                                        <th class="py-3 px-4 text-end" style="min-width: 150px;">Profit</th>
+                                        <th class="py-3 px-4 text-end" style="min-width: 120px;">Margin</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for event in top_profitable_events %}
+                                    <tr>
+                                        <td class="py-3 px-4">
+                                            <a href="{{ url_for('view_event', event_id=event.EventID) }}" class="text-decoration-none fw-bold">
+                                                {{ event.EventName }}
+                                            </a>
+                                        </td>
+                                        <td class="py-3 px-4">{{ event.customername }}</td>
+                                        <td class="py-3 px-4 d-none d-md-table-cell">{{ event.EventStart.strftime('%Y-%m-%d') if event.EventStart else 'N/A' }}</td>
+                                        <td class="py-3 px-4 text-end fw-semibold">£{{ "%.2f"|format(event.TotalSelling|float) }}</td>
+                                        <td class="py-3 px-4 text-end d-none d-md-table-cell">£{{ "%.2f"|format(event.TotalCost|float) }}</td>
+                                        <td class="py-3 px-4 text-end fw-bold text-success">£{{ "%.2f"|format(event.TotalProfit|float) }}</td>
+                                        <td class="py-3 px-4 text-end">
+                                            {% if event.TotalSelling and event.TotalSelling|float > 0 %}
+                                                <span class="badge {{ 'bg-success' if (event.TotalProfit|float / event.TotalSelling|float * 100) > 20 else 'bg-warning' }} px-3 py-2">
+                                                    {{ "%.1f"|format(event.TotalProfit|float / event.TotalSelling|float * 100) }}%
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-secondary px-3 py-2">0.0%</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="7" class="text-center py-5">No profitable events found</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Chart.js for the financial charts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Store financial data in variables
+    const pastCost = {% if past_financial.total_cost %}{{ past_financial.total_cost|float }}{% else %}0{% endif %};
+    const pastSelling = {% if past_financial.total_selling %}{{ past_financial.total_selling|float }}{% else %}0{% endif %};
+    const pastProfit = {% if past_financial.total_profit %}{{ past_financial.total_profit|float }}{% else %}0{% endif %};
+    const upcomingCost = {% if upcoming_financial.total_cost %}{{ upcoming_financial.total_cost|float }}{% else %}0{% endif %};
+    const upcomingSelling = {% if upcoming_financial.total_selling %}{{ upcoming_financial.total_selling|float }}{% else %}0{% endif %};
+    const upcomingProfit = {% if upcoming_financial.total_profit %}{{ upcoming_financial.total_profit|float }}{% else %}0{% endif %};
+    
+    // Create Summary Comparison Chart 
+    const summaryCanvas = document.getElementById('summaryComparisonChart');
+    if (summaryCanvas) {
+        const chartData = {
+            labels: ['Cost', 'Revenue', 'Profit'],
+            datasets: [
+                {
+                    label: 'Past 3 Months',
+                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1,
+                    data: [pastCost, pastSelling, pastProfit]
+                },
+                {
+                    label: 'Upcoming Events',
+                    backgroundColor: 'rgba(255, 99, 132, 0.7)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1,
+                    data: [upcomingCost, upcomingSelling, upcomingProfit]
+                }
+            ]
+        };
+        
+        new Chart(summaryCanvas, {
+            type: 'bar',
+            data: chartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '£' + value.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': £' + context.raw.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Past events chart
+    const pastEventsCanvas = document.getElementById('pastEventsChart');
+    if (pastEventsCanvas) {
+        const pastData = {
+            labels: ['Cost', 'Revenue', 'Profit'],
+            datasets: [{
+                label: 'Past Events Financial Summary',
+                data: [pastCost, pastSelling, pastProfit],
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.7)',
+                    'rgba(75, 192, 192, 0.7)',
+                    'rgba(54, 162, 235, 0.7)'
+                ],
+                borderColor: [
+                    'rgb(255, 99, 132)',
+                    'rgb(75, 192, 192)',
+                    'rgb(54, 162, 235)'
+                ],
+                borderWidth: 1
+            }]
+        };
+        
+        new Chart(pastEventsCanvas, {
+            type: 'bar',
+            data: pastData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '£' + value.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = '';
+                                if (context.dataIndex === 0) label = 'Cost: ';
+                                if (context.dataIndex === 1) label = 'Revenue: ';
+                                if (context.dataIndex === 2) label = 'Profit: ';
+                                return label + '£' + context.raw.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Upcoming events chart
+    const upcomingEventsCanvas = document.getElementById('upcomingEventsChart');
+    if (upcomingEventsCanvas) {
+        const upcomingData = {
+            labels: ['Cost', 'Revenue', 'Profit'],
+            datasets: [{
+                label: 'Upcoming Events Financial Summary',
+                data: [upcomingCost, upcomingSelling, upcomingProfit],
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.7)',
+                    'rgba(75, 192, 192, 0.7)',
+                    'rgba(54, 162, 235, 0.7)'
+                ],
+                borderColor: [
+                    'rgb(255, 99, 132)',
+                    'rgb(75, 192, 192)',
+                    'rgb(54, 162, 235)'
+                ],
+                borderWidth: 1
+            }]
+        };
+        
+        new Chart(upcomingEventsCanvas, {
+            type: 'bar',
+            data: upcomingData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '£' + value.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = '';
+                                if (context.dataIndex === 0) label = 'Expected Cost: ';
+                                if (context.dataIndex === 1) label = 'Expected Revenue: ';
+                                if (context.dataIndex === 2) label = 'Expected Profit: ';
+                                return label + '£' + context.raw.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Handle tab change to redraw charts when tabs are clicked
+    document.querySelectorAll('#financialTabs .nav-link').forEach(tab => {
+        tab.addEventListener('shown.bs.tab', function() {
+            const canvasId = this.getAttribute('data-bs-target').replace('-pane', 'Chart').replace('#', '');
+            const canvas = document.getElementById(canvasId);
+            if (canvas) {
+                const chart = Chart.getChart(canvas);
+                if (chart) {
+                    chart.resize();
+                }
+            }
+        });
+    });
+});
+</script>
+{% endblock %} 

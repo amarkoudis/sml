@@ -1,0 +1,45 @@
+<div class="form-sidebar">
+    <div class="sidebar-header">
+        <h5 class="sidebar-title">{% if is_edit_mode %}Edit{% else %}Create{% endif %} Event</h5>
+    </div>
+    <nav class="sidebar-nav">
+        <a href="#section-basic" class="nav-item active" data-section="#section-basic">
+            <i class="fas fa-info-circle"></i>
+            <span class="nav-text">Basic Information</span>
+        </a>
+        <a href="#section-staff" class="nav-item" data-section="#section-staff">
+            <i class="fas fa-users"></i>
+            <span class="nav-text">Staff Requirements</span>
+        </a>
+        <a href="#section-shifts" class="nav-item" data-section="#section-shifts">
+            <i class="fas fa-clock"></i>
+            <span class="nav-text">Shift Management</span>
+        </a>
+        <a href="#section-staff-distribution" class="nav-item" data-section="#section-staff-distribution">
+            <i class="fas fa-chart-pie"></i>
+            <span class="nav-text">Staff Distribution</span>
+        </a>
+        <a href="#section-staff-matrix" class="nav-item" data-section="#section-staff-matrix">
+            <i class="fas fa-balance-scale"></i>
+            <span class="nav-text">Staff Assignment Matrix</span>
+        </a>
+        <a href="#section-financial" class="nav-item" data-section="#section-financial">
+            <i class="fas fa-dollar-sign"></i>
+            <span class="nav-text">Financial Information</span>
+        </a>
+        <a href="#section-notes" class="nav-item" data-section="#section-notes">
+            <i class="fas fa-sticky-note"></i>
+            <span class="nav-text">Notes</span>
+        </a>
+        <div class="mt-auto">
+            <a href="#" class="nav-item text-success" data-action="save-form">
+                <i class="fas fa-save"></i>
+                <span class="nav-text">Save Event</span>
+            </a>
+            <a href="#" class="nav-item text-danger" data-action="cancel-form">
+                <i class="fas fa-times"></i>
+                <span class="nav-text">Cancel</span>
+            </a>
+        </div>
+    </nav>
+</div> 

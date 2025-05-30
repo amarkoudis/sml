@@ -1,0 +1,173 @@
+{% extends "layout.html" %}
+
+{% block title %}System Settings{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page header with actions -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-6 mb-3 mb-md-0">
+                    <h1 class="h3 mb-0">System Settings</h1>
+                    <p class="text-muted mt-1">Configure system-wide settings</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <button type="button" class="btn btn-primary save-all-settings">
+                        <i class="fas fa-save me-1"></i> Save All Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Card -->
+    <div class="card shadow">
+        <div class="card-body">
+            <form id="settings-form" method="POST" action="{{ url_for('update_system_settings') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                
+                <!-- Employee Contributions Section -->
+                <div class="setting-section mb-4">
+                    <h4 class="mb-3">
+                        Employee Contributions
+                        <a href="{{ url_for('contribution_settings') }}" class="btn btn-sm btn-outline-primary float-end">
+                            <i class="fas fa-sliders-h me-1"></i> Detailed Settings
+                        </a>
+                    </h4>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="employer_contribution_percentage" class="form-label">Employer Contribution (%)</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="employer_contribution_percentage" 
+                                           name="employer_contribution_percentage" min="0" max="100" step="0.1" 
+                                           value="{{ settings.employer_contribution_percentage.setting_value if settings.employer_contribution_percentage else '13.0' }}">
+                                    <span class="input-group-text">%</span>
+                                </div>
+                                <small class="form-text text-muted">Percentage of employee cost that the employer contributes</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="employee_contribution_percentage" class="form-label">Employee Contribution (%)</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="employee_contribution_percentage" 
+                                           name="employee_contribution_percentage" min="0" max="100" step="0.1" 
+                                           value="{{ settings.employee_contribution_percentage.setting_value if settings.employee_contribution_percentage else '8.0' }}">
+                                    <span class="input-group-text">%</span>
+                                </div>
+                                <small class="form-text text-muted">Percentage of employee cost that is deducted from employee</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- VAT and Currency Section -->
+                <div class="setting-section mb-4">
+                    <h4 class="mb-3">Financial Settings</h4>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="vat_rate_default" class="form-label">Default VAT Rate (%)</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="vat_rate_default" 
+                                           name="vat_rate_default" min="0" max="100" step="0.1" 
+                                           value="{{ settings.vat_rate_default.setting_value if settings.vat_rate_default else '19.0' }}">
+                                    <span class="input-group-text">%</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="system_currency" class="form-label">System Currency</label>
+                                <select class="form-select" id="system_currency" name="system_currency">
+                                    <option value="EUR" {% if settings.system_currency and settings.system_currency.setting_value == 'EUR' %}selected{% endif %}>Euro (€)</option>
+                                    <option value="USD" {% if settings.system_currency and settings.system_currency.setting_value == 'USD' %}selected{% endif %}>US Dollar ($)</option>
+                                    <option value="GBP" {% if settings.system_currency and settings.system_currency.setting_value == 'GBP' %}selected{% endif %}>British Pound (£)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Additional Settings can be added here -->
+                
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i> Save Settings
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Example/Help Card -->
+    <div class="card shadow mt-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">About Employee Contributions</h5>
+        </div>
+        <div class="card-body">
+            <p>Employee contributions are automatically calculated based on the hourly cost of each employee:</p>
+            <ul>
+                <li><strong>Employer Contribution:</strong> Additional percentage paid by the employer on top of the employee's wage</li>
+                <li><strong>Employee Contribution:</strong> Percentage deducted from the employee's gross wage</li>
+            </ul>
+            
+            <div class="alert alert-info">
+                <h6 class="alert-heading">Example Calculation:</h6>
+                <p class="mb-1">For an employee with an hourly cost of €10.00:</p>
+                <ul class="mb-0">
+                    <li>Employer contribution (13%): €1.30 per hour</li>
+                    <li>Employee contribution (8%): €0.80 per hour</li>
+                    <li>Total employer cost: €11.30 per hour</li>
+                    <li>Employee net pay (before tax): €9.20 per hour</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Validate percentage fields are between 0-100
+    document.querySelectorAll('input[type="number"][min="0"][max="100"]').forEach(input => {
+        input.addEventListener('change', function() {
+            const val = parseFloat(this.value);
+            if (val < 0) this.value = 0;
+            if (val > 100) this.value = 100;
+        });
+    });
+    
+    // Example of automatic real-time calculation display
+    function updateExampleCalculation() {
+        const employerContribPct = parseFloat(document.getElementById('employer_contribution_percentage').value) || 13;
+        const employeeContribPct = parseFloat(document.getElementById('employee_contribution_percentage').value) || 8;
+        
+        // Update the example calculation in the help card
+        const hourlyRate = 10; // Example hourly rate
+        const employerContrib = (hourlyRate * employerContribPct / 100).toFixed(2);
+        const employeeContrib = (hourlyRate * employeeContribPct / 100).toFixed(2);
+        const totalEmployerCost = (hourlyRate + parseFloat(employerContrib)).toFixed(2);
+        const netPay = (hourlyRate - parseFloat(employeeContrib)).toFixed(2);
+        
+        // Update the example text (if we had added element IDs)
+        document.querySelector('.alert-info ul').innerHTML = `
+            <li>Employer contribution (${employerContribPct}%): €${employerContrib} per hour</li>
+            <li>Employee contribution (${employeeContribPct}%): €${employeeContrib} per hour</li>
+            <li>Total employer cost: €${totalEmployerCost} per hour</li>
+            <li>Employee net pay (before tax): €${netPay} per hour</li>
+        `;
+    }
+    
+    // Attach event listeners to update example in real-time
+    document.getElementById('employer_contribution_percentage').addEventListener('input', updateExampleCalculation);
+    document.getElementById('employee_contribution_percentage').addEventListener('input', updateExampleCalculation);
+    
+    // Initialize example calculation
+    updateExampleCalculation();
+});
+</script>
+{% endblock %} 

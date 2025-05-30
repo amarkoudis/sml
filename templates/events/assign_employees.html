@@ -1,0 +1,254 @@
+{% extends "layout.html" %}
+
+{% block title %}Assign Employees - {{ shift.shiftname }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1>Assign Employees to Shift</h1>
+            <p class="text-muted">
+                {{ shift.EventName }} | {{ shift.shiftname }}<br>
+                <small>Start: {% if shift.shiftstart %}{{ shift.shiftstart.strftime('%Y-%m-%d %H:%M') }}{% else %}N/A{% endif %} | End: {% if shift.shiftend %}{{ shift.shiftend.strftime('%Y-%m-%d %H:%M') }}{% else %}N/A{% endif %}</small>
+            </p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('manage_all_shifts', event_id=event_id) }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Shifts
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Assigned Employees Section -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Assigned Employees</h5>
+                </div>
+                <div class="card-body">
+                    <form id="assignmentsForm" method="POST" action="{{ url_for('assign_employees_to_shift', shift_id=shift.shiftid, event_id=event_id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <input type="hidden" name="shift_id" value="{{ shift.shiftid }}">
+                        <input type="hidden" name="event_id" value="{{ event_id }}">
+                        
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Role</th>
+                                        <th>Assign Hours</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for employee in assigned_employees %}
+                                    <tr>
+                                        <td>{{ employee.employeename }}</td>
+                                        <td>{{ employee.employeerolename or 'Not Assigned' }}</td>
+                                        <td>
+                                            <input type="number" 
+                                                   name="hours[{{ employee.employeeid }}]" 
+                                                   class="form-control form-control-sm" 
+                                                   value="{{ employee.HoursAssigned or '0' }}">
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn btn-sm btn-danger" onclick="removeEmployee({{ employee.employeeid }})">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {% if assigned_employees %}
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add New Employee Section -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Add New Employee</h5>
+                </div>
+                <div class="card-body">
+                    <form id="addEmployeeForm" method="POST" action="{{ url_for('assign_employees_to_shift', shift_id=shift.shiftid, event_id=event_id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <input type="hidden" name="shift_id" value="{{ shift.shiftid }}">
+                        <input type="hidden" name="event_id" value="{{ event_id }}">
+                        
+                        <div class="mb-3">
+                            <label for="employeeSelect" class="form-label">Select Employee</label>
+                            <select name="employee_id" id="employeeSelect" class="form-select select2" required>
+                                <option value="">Search employee...</option>
+                                {% for employee in all_employees %}
+                                    {% if not employee.is_assigned %}
+                                    <option value="{{ employee.employeeid }}">
+                                        {{ employee.employeename }} 
+                                        {% if employee.employeerolename %}
+                                            ({{ employee.employeerolename }})
+                                        {% endif %}
+                                    </option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="hoursInput" class="form-label">Hours</label>
+                            <input type="number" 
+                                   name="hours" 
+                                   id="hoursInput" 
+                                   class="form-control" 
+                                   required>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">Add Employee</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Add Select2 CSS and JS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Select2
+    $('#employeeSelect').select2({
+        placeholder: 'Search employee...',
+        allowClear: true,
+        width: '100%',
+        theme: 'bootstrap-5'
+    });
+
+    // Handle form submission for adding new employee
+    const addEmployeeForm = document.getElementById('addEmployeeForm');
+    if (addEmployeeForm) {
+        addEmployeeForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = {
+                hours: {
+                    [formData.get('employee_id')]: formData.get('hours')
+                }
+            };
+            
+            fetch(`/shifts/${formData.get('shift_id')}/assign/${formData.get('event_id')}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': formData.get('csrf_token')
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = `/events/${formData.get('event_id')}/edit`;
+                } else {
+                    alert('Error: ' + (data.error || 'Failed to add employee'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while adding the employee');
+            });
+        });
+    }
+
+    // Handle form submission for saving changes
+    const assignmentsForm = document.getElementById('assignmentsForm');
+    if (assignmentsForm) {
+        assignmentsForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const hours = {};
+            
+            // Collect all hours values
+            formData.forEach((value, key) => {
+                if (key.startsWith('hours[')) {
+                    const employeeId = key.match(/\[(\d+)\]/)[1];
+                    hours[employeeId] = value;
+                }
+            });
+            
+            const shiftId = formData.get('shift_id');
+            const eventId = formData.get('event_id');
+            
+            if (!shiftId || !eventId) {
+                alert('Error: Missing shift or event information');
+                return;
+            }
+            
+            fetch(`/shifts/${shiftId}/assign/${eventId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': formData.get('csrf_token')
+                },
+                body: JSON.stringify({ hours })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = `/events/${eventId}/edit`;
+                } else {
+                    alert('Error: ' + (data.error || 'Failed to save changes'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while saving changes');
+            });
+        });
+    }
+});
+
+function removeEmployee(employeeId) {
+    if (confirm('Are you sure you want to remove this employee from the shift?')) {
+        const form = document.querySelector('form');
+        const formData = new FormData(form);
+        const csrfToken = formData.get('csrf_token');
+        
+        fetch(`/shifts/${formData.get('shift_id')}/assign/${formData.get('event_id')}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({
+                action: 'remove',
+                employee_id: employeeId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = `/events/${formData.get('event_id')}/edit`;
+            } else {
+                alert('Error: ' + (data.error || 'Failed to remove employee'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while removing the employee');
+        });
+    }
+}
+</script>
+{% endblock %} 

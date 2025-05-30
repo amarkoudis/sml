@@ -1,0 +1,93 @@
+{% extends 'layout.html' %}
+
+{% block title %}Email Invoice{% endblock %}
+
+{% block styles %}
+<style>
+    .success-icon {
+        color: #28a745;
+        font-size: 5rem;
+        margin-bottom: 2rem;
+    }
+    .success-card {
+        max-width: 700px;
+        margin: 2rem auto;
+        padding: 3rem;
+        text-align: center;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        border-radius: 0.5rem;
+    }
+    .action-buttons {
+        margin-top: 2rem;
+    }
+    .invoice-details {
+        margin: 2rem 0;
+        padding: 1.5rem;
+        background-color: #f8f9fa;
+        border-radius: 0.25rem;
+        text-align: left;
+    }
+    .mailto-instructions {
+        margin: 1.5rem 0;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card success-card">
+        <div class="card-body">
+            <i class="fas fa-envelope-open-text success-icon"></i>
+            <h2 class="mb-4">Preparing Email</h2>
+            
+            <p class="lead">Your email client should open automatically with the invoice information.</p>
+            
+            <div class="invoice-details">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Invoice Number:</strong> {{ invoice.invoice_number }}</p>
+                        <p><strong>Recipient:</strong> {{ recipient_email }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Amount:</strong> {{ invoice.total }} EUR</p>
+                        <p><strong>Date:</strong> {{ invoice.invoice_date.strftime('%Y-%m-%d') }}</p>
+                    </div>
+                </div>
+                
+                {% if pdf_saved %}
+                <div class="alert alert-info">
+                    <i class="fas fa-file-pdf"></i> 
+                    A PDF copy of the invoice has been saved to your desktop.
+                    <strong>Please attach this file manually to your email.</strong>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="mailto-instructions">
+                <p>If your email client doesn't open automatically, please click the button below:</p>
+            </div>
+            
+            <div class="action-buttons">
+                <a href="{{ mailto_link }}" class="btn btn-primary btn-lg me-2">
+                    <i class="fas fa-envelope"></i> Open Email Client
+                </a>
+                <a href="{{ url_for('invoice_view', invoice_id=invoice.invoice_id) }}" class="btn btn-outline-secondary btn-lg">
+                    <i class="fas fa-arrow-left"></i> Back to Invoice
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Automatically open the mailto link
+    setTimeout(function() {
+        window.location.href = "{{ mailto_link }}";
+    }, 1000);
+});
+</script>
+{% endblock %} 

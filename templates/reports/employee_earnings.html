@@ -1,0 +1,388 @@
+{% extends "layout.html" %}
+
+{% block title %}Employee Earnings Report{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page header with actions -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-6 mb-3 mb-md-0">
+                    <h1 class="h3 mb-0">Employee Earnings Report</h1>
+                    <p class="text-muted mt-1">View detailed earnings and contributions per event and shift</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <button type="button" class="btn btn-success" id="export-excel">
+                        <i class="fas fa-file-excel me-1"></i> Export to Excel
+                    </button>
+                    <button type="button" class="btn btn-danger" id="export-pdf">
+                        <i class="fas fa-file-pdf me-1"></i> Export to PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="card shadow mb-4">
+        <div class="card-header bg-white">
+            <h5 class="card-header-title">Filters</h5>
+        </div>
+        <div class="card-body">
+            <form id="filter-form" method="GET" action="{{ url_for('employee_earnings_report') }}">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="date_from" class="form-label">From Date</label>
+                            <input type="date" class="form-control" id="date_from" name="date_from"
+                                  value="{{ date_from }}">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="date_to" class="form-label">To Date</label>
+                            <input type="date" class="form-control" id="date_to" name="date_to"
+                                  value="{{ date_to }}">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="employee_id" class="form-label">Employee</label>
+                            <select class="form-select" id="employee_id" name="employee_id">
+                                <option value="">All Employees</option>
+                                {% for employee in employees %}
+                                <option value="{{ employee.employeeid }}" {% if selected_employee_id == employee.employeeid|string %}selected{% endif %}>
+                                    {{ employee.employeename }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-3">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-filter me-1"></i> Apply Filters
+                    </button>
+                    <a href="{{ url_for('employee_earnings_report') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-undo me-1"></i> Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Current Rates Box -->
+    <div class="alert alert-info mb-4">
+        <div class="d-flex align-items-center">
+            <div>
+                <h5 class="alert-heading mb-1">Current Contribution Rates</h5>
+                <p class="mb-0">
+                    <span class="fw-bold">Social:</span> Employee {{ contribution_rates.social_employee }}%, Employer {{ contribution_rates.social_employer }}% | 
+                    <span class="fw-bold">GESY:</span> Employee {{ contribution_rates.gesy_employee }}%, Employer {{ contribution_rates.gesy_employer }}% | 
+                    <span class="fw-bold">Social Cohesion:</span> Employer {{ contribution_rates.cohesion_employer }}% | 
+                    <span class="fw-bold">Redundancy:</span> Employer {{ contribution_rates.redundancy_employer }}% | 
+                    <span class="fw-bold">Industrial:</span> Employer {{ contribution_rates.industrial_employer }}%
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Table -->
+    {% if report_data %}
+        {% set events = {} %}
+        
+        {# Group data by event and shift #}
+        {% for item in report_data %}
+            {% if item.event_id not in events %}
+                {% set _ = events.update({item.event_id: {'name': item.event_name, 'shifts': {}}}) %}
+            {% endif %}
+            
+            {% if item.shift_id not in events[item.event_id]['shifts'] %}
+                {% set _ = events[item.event_id]['shifts'].update({
+                    item.shift_id: {
+                        'name': item.shift_name,
+                        'time': item.shift_time,
+                        'date': item.date,
+                        'records': []
+                    }
+                }) %}
+            {% endif %}
+            
+            {% set _ = events[item.event_id]['shifts'][item.shift_id]['records'].append(item) %}
+        {% endfor %}
+        
+        {% for event_id, event in events.items() %}
+            <!-- Initialize counters for this event at the beginning -->
+            {% set event_hours = 0.0 %}
+            {% set event_gross = 0.0 %}
+            {% set event_social_employee = 0.0 %}
+            {% set event_gesy_employee = 0.0 %}
+            {% set event_total_employee = 0.0 %}
+            {% set event_net = 0.0 %}
+            {% set event_social_employer = 0.0 %}
+            {% set event_gesy_employer = 0.0 %}
+            {% set event_cohesion = 0.0 %}
+            {% set event_redundancy = 0.0 %}
+            {% set event_industrial = 0.0 %}
+            {% set event_total_employer = 0.0 %}
+            {% set event_total_cost = 0.0 %}
+            
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Event: {{ event.name }}</h5>
+                </div>
+                
+                {% for shift_id, shift in event.shifts.items() %}
+                    <div class="card mx-3 my-3">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">Shift: {{ shift.name }} ({{ shift.time }}) - {{ shift.date }}</h6>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table modern-table table-hover table-striped mb-0 earnings-table align-middle">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <!-- Basic Information -->
+                                            <th colspan="2" class="text-center">Employee Information</th>
+                                            <th colspan="3" class="text-center">Earnings</th>
+                                            <!-- Employee Contributions -->
+                                            <th colspan="4" class="text-center bg-info-subtle">Employee Contributions</th>
+                                            <!-- Employer Contributions -->
+                                            <th colspan="6" class="text-center bg-warning-subtle">Employer Contributions</th>
+                                            <th class="text-center">Total</th>
+                                        </tr>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Position</th>
+                                            <th>Hours</th>
+                                            <th>Rate (€)</th>
+                                            <th>Gross Pay (€)</th>
+                                            <!-- Employee Contributions -->
+                                            <th class="bg-info-subtle">Social (€)</th>
+                                            <th class="bg-info-subtle">GESY (€)</th>
+                                            <th class="bg-info-subtle">Total (€)</th>
+                                            <th class="bg-info-subtle">Net Pay (€)</th>
+                                            <!-- Employer Contributions -->
+                                            <th class="bg-warning-subtle">Social (€)</th>
+                                            <th class="bg-warning-subtle">GESY (€)</th>
+                                            <th class="bg-warning-subtle">Cohesion (€)</th>
+                                            <th class="bg-warning-subtle">Redundancy (€)</th>
+                                            <th class="bg-warning-subtle">Industrial (€)</th>
+                                            <th class="bg-warning-subtle">Total (€)</th>
+                                            <!-- Total Cost -->
+                                            <th>Total Cost (€)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for item in shift.records %}
+                                        <tr>
+                                            <td>{{ item.employee_name }}</td>
+                                            <td>{{ item.position }}</td>
+                                            <td>{{ "%.2f"|format(item.hours_worked) }}</td>
+                                            <td>{{ "%.2f"|format(item.hourly_rate) }}</td>
+                                            <td>{{ "%.2f"|format(item.gross_pay) }}</td>
+                                            <!-- Employee Contributions -->
+                                            <td class="bg-info-subtle">{{ "%.2f"|format(item.social_employee) }}</td>
+                                            <td class="bg-info-subtle">{{ "%.2f"|format(item.gesy_employee) }}</td>
+                                            <td class="bg-info-subtle">{{ "%.2f"|format(item.total_employee_contribution) }}</td>
+                                            <td class="bg-info-subtle">{{ "%.2f"|format(item.net_pay) }}</td>
+                                            <!-- Employer Contributions -->
+                                            <td class="bg-warning-subtle">{{ "%.2f"|format(item.social_employer) }}</td>
+                                            <td class="bg-warning-subtle">{{ "%.2f"|format(item.gesy_employer) }}</td>
+                                            <td class="bg-warning-subtle">{{ "%.2f"|format(item.cohesion_employer) }}</td>
+                                            <td class="bg-warning-subtle">{{ "%.2f"|format(item.redundancy_employer) }}</td>
+                                            <td class="bg-warning-subtle">{{ "%.2f"|format(item.industrial_employer) }}</td>
+                                            <td class="bg-warning-subtle">{{ "%.2f"|format(item.total_employer_contribution) }}</td>
+                                            <!-- Total Cost - Calculating directly -->
+                                            <td>{{ "%.2f"|format(item.gross_pay + item.total_employer_contribution) }}</td>
+                                        </tr>
+                                        
+                                        <!-- Accumulate event totals -->
+                                        {% set event_hours = event_hours + item.hours_worked %}
+                                        {% set event_gross = event_gross + item.gross_pay %}
+                                        {% set event_social_employee = event_social_employee + item.social_employee %}
+                                        {% set event_gesy_employee = event_gesy_employee + item.gesy_employee %}
+                                        {% set event_total_employee = event_total_employee + item.total_employee_contribution %}
+                                        {% set event_net = event_net + item.net_pay %}
+                                        {% set event_social_employer = event_social_employer + item.social_employer %}
+                                        {% set event_gesy_employer = event_gesy_employer + item.gesy_employer %}
+                                        {% set event_cohesion = event_cohesion + item.cohesion_employer %}
+                                        {% set event_redundancy = event_redundancy + item.redundancy_employer %}
+                                        {% set event_industrial = event_industrial + item.industrial_employer %}
+                                        {% set event_total_employer = event_total_employer + item.total_employer_contribution %}
+                                        {% set event_total_cost = event_total_cost + item.gross_pay + item.total_employer_contribution %}
+                                        {% endfor %}
+                                    </tbody>
+                                    <tfoot class="table-light">
+                                        <tr class="fw-bold">
+                                            <td colspan="2">Shift Total</td>
+                                            <td>{{ "%.2f"|format(shift.records|sum(attribute='hours_worked')) }}</td>
+                                            <td></td>
+                                            <td>{{ "%.2f"|format(shift.records|sum(attribute='gross_pay')) }}</td>
+                                            <!-- Employee Contributions -->
+                                            <td class="bg-info-subtle">{{ "%.2f"|format(shift.records|sum(attribute='social_employee')) }}</td>
+                                            <td class="bg-info-subtle">{{ "%.2f"|format(shift.records|sum(attribute='gesy_employee')) }}</td>
+                                            <td class="bg-info-subtle">{{ "%.2f"|format(shift.records|sum(attribute='total_employee_contribution')) }}</td>
+                                            <td class="bg-info-subtle">{{ "%.2f"|format(shift.records|sum(attribute='net_pay')) }}</td>
+                                            <!-- Employer Contributions -->
+                                            <td class="bg-warning-subtle">{{ "%.2f"|format(shift.records|sum(attribute='social_employer')) }}</td>
+                                            <td class="bg-warning-subtle">{{ "%.2f"|format(shift.records|sum(attribute='gesy_employer')) }}</td>
+                                            <td class="bg-warning-subtle">{{ "%.2f"|format(shift.records|sum(attribute='cohesion_employer')) }}</td>
+                                            <td class="bg-warning-subtle">{{ "%.2f"|format(shift.records|sum(attribute='redundancy_employer')) }}</td>
+                                            <td class="bg-warning-subtle">{{ "%.2f"|format(shift.records|sum(attribute='industrial_employer')) }}</td>
+                                            <td class="bg-warning-subtle">{{ "%.2f"|format(shift.records|sum(attribute='total_employer_contribution')) }}</td>
+                                            <!-- Total Cost -->
+                                            <td>{{ "%.2f"|format(shift.records|sum(attribute='gross_pay') + shift.records|sum(attribute='total_employer_contribution')) }}</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="card shadow">
+            <div class="card-body text-center py-5">
+                <div class="mb-3">
+                    <i class="fas fa-search fa-3x text-muted"></i>
+                </div>
+                <h5 class="text-muted">No Records Found</h5>
+                <p class="text-muted mb-0">Try adjusting your filters or select a different date range</p>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+<script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
+<script src="https://unpkg.com/jspdf-autotable@latest"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Export to Excel
+    document.getElementById('export-excel').addEventListener('click', function() {
+        // Create a new workbook
+        const wb = XLSX.utils.book_new();
+        
+        // Get all tables with earnings data
+        const tables = document.querySelectorAll('.earnings-table');
+        let tableIndex = 0;
+        
+        tables.forEach(table => {
+            // Get the event name and shift name from headers
+            const eventName = table.closest('.card.shadow').querySelector('.card-header h5').textContent.replace('Event: ', '');
+            const shiftInfo = table.closest('.card').querySelector('.card-header h6').textContent;
+            
+            // Create worksheet from table
+            const ws = XLSX.utils.table_to_sheet(table);
+            
+            // Add worksheet to workbook with event and shift info as sheet name
+            XLSX.utils.book_append_sheet(wb, ws, `${eventName}-${tableIndex}`);
+            tableIndex++;
+        });
+        
+        // Write to file
+        XLSX.writeFile(wb, 'Employee_Earnings_Report.xlsx');
+    });
+    
+    // Export to PDF
+    document.getElementById('export-pdf').addEventListener('click', function() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('l', 'pt', 'a3'); // Using A3 for wider table
+        
+        // Add title
+        doc.setFontSize(18);
+        doc.text('Employee Earnings Report (By Event and Shift)', 40, 40);
+        
+        // Get current date for report header
+        const today = new Date();
+        const dateStr = today.toLocaleDateString();
+        doc.setFontSize(12);
+        doc.text(`Generated on: ${dateStr}`, 40, 60);
+        
+        // Add dates to report header
+        const dateFrom = document.getElementById('date_from').value;
+        const dateTo = document.getElementById('date_to').value;
+        doc.text(`Report Period: ${dateFrom} to ${dateTo}`, 40, 80);
+        
+        let yPos = 100;
+        
+        // Get all event cards
+        const eventCards = document.querySelectorAll('.card.shadow');
+        
+        eventCards.forEach((eventCard, index) => {
+            // Get event name
+            const eventName = eventCard.querySelector('.card-header h5').textContent;
+            
+            // Add event header
+            if (index > 0) yPos += 30;
+            doc.setFontSize(14);
+            doc.setTextColor(0, 51, 153);
+            doc.text(eventName, 40, yPos);
+            yPos += 20;
+            
+            // Get all shift tables in this event
+            const shiftCards = eventCard.querySelectorAll('.card:not(.shadow)');
+            
+            shiftCards.forEach(shiftCard => {
+                const shiftName = shiftCard.querySelector('.card-header h6').textContent;
+                
+                // Add shift header
+                doc.setFontSize(12);
+                doc.setTextColor(0, 0, 0);
+                doc.text(shiftName, 40, yPos);
+                yPos += 15;
+                
+                // Add table
+                const table = shiftCard.querySelector('table');
+                doc.autoTable({
+                    html: table,
+                    startY: yPos,
+                    theme: 'grid',
+                    headStyles: {
+                        fillColor: [41, 128, 185],
+                        textColor: 255,
+                        fontSize: 8
+                    },
+                    bodyStyles: {
+                        fontSize: 8
+                    },
+                    footStyles: {
+                        fillColor: [233, 236, 239],
+                        textColor: 0,
+                        fontStyle: 'bold',
+                        fontSize: 8
+                    },
+                    alternateRowStyles: {
+                        fillColor: [245, 245, 245]
+                    },
+                    margin: { right: 15, left: 15 },
+                    styles: { overflow: 'linebreak' },
+                });
+                
+                yPos = doc.lastAutoTable.finalY + 20;
+                
+                // Check if we need a new page
+                if (yPos > doc.internal.pageSize.height - 100) {
+                    doc.addPage();
+                    yPos = 40;
+                }
+            });
+            
+            // Add page break between events
+            if (index < eventCards.length - 1) {
+                doc.addPage();
+                yPos = 40;
+            }
+        });
+        
+        doc.save('Employee_Earnings_Report.pdf');
+    });
+});
+</script>
+{% endblock %} 

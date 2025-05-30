@@ -1,0 +1,234 @@
+{% extends "layout.html" %}
+
+{% block title %}Bank Export{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page header -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h1 class="h3 mb-0">Bank Export</h1>
+                    <p class="text-muted mt-1">Generate employee payment files for bank transfers</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <!-- Any action buttons can go here -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Export Options -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="card-header-title">Export Options</h5>
+                </div>
+                <div class="card-body">
+                    <form id="export-form" method="POST" action="{{ url_for('generate_bank_export') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        
+                        <!-- Pay Period -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-uppercase text-muted fs-6 fw-bold mb-3">Pay Period</h6>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="pay_period_start" class="form-label">Start Date</label>
+                                    <input type="date" class="form-control" id="pay_period_start" name="pay_period_start" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="pay_period_end" class="form-label">End Date</label>
+                                    <input type="date" class="form-control" id="pay_period_end" name="pay_period_end" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Export Format -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-uppercase text-muted fs-6 fw-bold mb-3">Export Format</h6>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="bank_format" class="form-label">Bank Format</label>
+                                    <select class="form-select" id="bank_format" name="bank_format" required>
+                                        <option value="">Select Format</option>
+                                        <option value="csv">CSV (Generic)</option>
+                                        <option value="bankofcyprus">Bank of Cyprus</option>
+                                        <option value="hellenic">Hellenic Bank</option>
+                                        <option value="sepa">SEPA Format</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="include_contributions" class="form-label">Include Contributions</label>
+                                    <select class="form-select" id="include_contributions" name="include_contributions">
+                                        <option value="0">Net Pay Only</option>
+                                        <option value="1">Include Employee Contributions</option>
+                                        <option value="2">Include All Contributions</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Payment Details -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-uppercase text-muted fs-6 fw-bold mb-3">Payment Details</h6>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="payment_date" class="form-label">Payment Date</label>
+                                    <input type="date" class="form-control" id="payment_date" name="payment_date" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="payment_reference" class="form-label">Reference</label>
+                                    <input type="text" class="form-control" id="payment_reference" name="payment_reference" 
+                                           placeholder="e.g., Salary Payment May 2025">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Employee Selection -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-uppercase text-muted fs-6 fw-bold mb-3">Employee Selection</h6>
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="all_employees" name="all_employees" value="1" checked>
+                                    <label class="form-check-label" for="all_employees">All Employees</label>
+                                </div>
+                                <div id="employee-selection" class="d-none">
+                                    <select class="form-select" id="employees" name="employees[]" multiple data-placeholder="Select Employees">
+                                        {% for employee in employees %}
+                                        <option value="{{ employee.employeeid }}">{{ employee.employeename }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="form-text">Hold Ctrl/Cmd to select multiple employees</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-file-export me-1"></i> Generate Export
+                            </button>
+                            <button type="reset" class="btn btn-outline-secondary">
+                                <i class="fas fa-undo me-1"></i> Reset
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Help & Instructions -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="card-header-title">Instructions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h6 class="alert-heading"><i class="fas fa-info-circle me-2"></i>Bank Export</h6>
+                        <p class="mb-0">This tool generates payment files for bank transfers based on employee earnings during the selected period.</p>
+                    </div>
+                    
+                    <h6 class="text-uppercase text-muted fs-6 fw-bold mt-4">Export Steps</h6>
+                    <ol class="list-unstyled ps-0">
+                        <li class="d-flex align-items-start mb-2">
+                            <span class="badge bg-primary rounded-circle mt-1 me-2">1</span>
+                            <span>Select the pay period date range</span>
+                        </li>
+                        <li class="d-flex align-items-start mb-2">
+                            <span class="badge bg-primary rounded-circle mt-1 me-2">2</span>
+                            <span>Choose the bank export format</span>
+                        </li>
+                        <li class="d-flex align-items-start mb-2">
+                            <span class="badge bg-primary rounded-circle mt-1 me-2">3</span>
+                            <span>Specify the payment date and reference</span>
+                        </li>
+                        <li class="d-flex align-items-start mb-2">
+                            <span class="badge bg-primary rounded-circle mt-1 me-2">4</span>
+                            <span>Select employees or include all</span>
+                        </li>
+                        <li class="d-flex align-items-start">
+                            <span class="badge bg-primary rounded-circle mt-1 me-2">5</span>
+                            <span>Click Generate Export to download the file</span>
+                        </li>
+                    </ol>
+                    
+                    <h6 class="text-uppercase text-muted fs-6 fw-bold mt-4">Bank Formats</h6>
+                    <ul class="list-unstyled ps-0">
+                        <li class="d-flex align-items-start mb-2">
+                            <i class="fas fa-file-csv text-success me-2 mt-1"></i>
+                            <span><strong>CSV</strong>: Generic comma-separated values format</span>
+                        </li>
+                        <li class="d-flex align-items-start mb-2">
+                            <i class="fas fa-university text-primary me-2 mt-1"></i>
+                            <span><strong>Bank of Cyprus</strong>: BOC specific format</span>
+                        </li>
+                        <li class="d-flex align-items-start mb-2">
+                            <i class="fas fa-university text-primary me-2 mt-1"></i>
+                            <span><strong>Hellenic Bank</strong>: Hellenic specific format</span>
+                        </li>
+                        <li class="d-flex align-items-start">
+                            <i class="fas fa-globe-europe text-info me-2 mt-1"></i>
+                            <span><strong>SEPA</strong>: Standard European payment format</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize date fields with current date range (current month)
+    const today = new Date();
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    
+    document.getElementById('pay_period_start').valueAsDate = firstDay;
+    document.getElementById('pay_period_end').valueAsDate = lastDay;
+    document.getElementById('payment_date').valueAsDate = new Date();
+    
+    // Auto-generate payment reference
+    const month = today.toLocaleString('default', { month: 'long' });
+    const year = today.getFullYear();
+    document.getElementById('payment_reference').value = `Salary Payment ${month} ${year}`;
+    
+    // Toggle employee selection
+    document.getElementById('all_employees').addEventListener('change', function() {
+        const employeeSelection = document.getElementById('employee-selection');
+        if (this.checked) {
+            employeeSelection.classList.add('d-none');
+            document.getElementById('employees').required = false;
+        } else {
+            employeeSelection.classList.remove('d-none');
+            document.getElementById('employees').required = true;
+        }
+    });
+    
+    // Initialize Select2 for better multiple select experience
+    if (typeof $.fn.select2 !== 'undefined') {
+        $('#employees').select2({
+            width: '100%',
+            placeholder: 'Select Employees',
+            allowClear: true
+        });
+    }
+});
+</script>
+{% endblock %} 

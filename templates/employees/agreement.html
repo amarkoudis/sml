@@ -1,0 +1,213 @@
+{% extends "layout.html" %}
+
+{% block title %}Employee Agreement - {{ employee.employeename }}{% endblock %}
+
+{% block styles %}
+<style>
+    .agreement-container {
+        max-width: 800px;
+        margin: 2rem auto;
+        padding: 2rem;
+        background: white;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+    }
+
+    .agreement-header {
+        text-align: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #4e73df;
+    }
+
+    .agreement-title {
+        color: #4e73df;
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .agreement-subtitle {
+        color: #666;
+        font-size: 1rem;
+    }
+
+    .agreement-section {
+        margin-bottom: 1.5rem;
+    }
+
+    .section-title {
+        color: #2e59d9;
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: #4a5568;
+        font-weight: 500;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #cbd5e0;
+        border-radius: 4px;
+        transition: border-color 0.2s;
+    }
+
+    .form-control:focus {
+        border-color: #4e73df;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.2);
+    }
+
+    .agreement-actions {
+        margin-top: 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .btn-generate {
+        background: #4e73df;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    .btn-generate:hover {
+        background: #2e59d9;
+    }
+
+    .btn-back {
+        color: #4a5568;
+        text-decoration: none;
+    }
+
+    .btn-back:hover {
+        text-decoration: underline;
+    }
+
+    .existing-agreement {
+        background: #f8fafc;
+        padding: 1.5rem;
+        border-radius: 6px;
+        margin-bottom: 2rem;
+        white-space: pre-wrap;
+        font-family: inherit;
+    }
+
+    .no-agreement {
+        text-align: center;
+        padding: 2rem;
+        background: #f8fafc;
+        border-radius: 6px;
+        margin-bottom: 2rem;
+        color: #718096;
+    }
+
+    .no-agreement i {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        color: #a0aec0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="agreement-container">
+    <div class="agreement-header">
+        <h1 class="agreement-title">Employee Agreement</h1>
+        <p class="agreement-subtitle">{{ employee.employeename }} - {{ employee.employeerolename }}</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="close" data-bs-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    {% if employee.EmploymentAgreement %}
+    <div class="existing-agreement">
+        <h3 class="section-title">Current Agreement</h3>
+        <div class="agreement-section">
+            {{ employee.EmploymentAgreement|replace('\n', '<br>')|safe }}
+        </div>
+    </div>
+    {% else %}
+    <div class="no-agreement">
+        <i class="fas fa-file-contract"></i>
+        <p>No agreement has been generated yet.</p>
+    </div>
+    {% endif %}
+
+    <form action="{{ url_for('generate_employee_agreement', employee_id=employee.employeeid) }}" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        
+        <div class="agreement-section">
+            <h3 class="section-title">Generate New Agreement</h3>
+            
+            <div class="form-group">
+                <label for="start_date">Start Date</label>
+                <input type="date" class="form-control" id="start_date" name="start_date" required>
+            </div>
+
+            <div class="form-group">
+                <label for="end_date">End Date</label>
+                <input type="date" class="form-control" id="end_date" name="end_date" required>
+            </div>
+
+            <div class="form-group">
+                <label for="hourly_rate">Hourly Rate (€)</label>
+                <input type="number" step="0.01" class="form-control" id="hourly_rate" name="hourly_rate" required>
+            </div>
+
+            <div class="form-group">
+                <label for="terms">Agreement Terms</label>
+                <textarea class="form-control" id="terms" name="terms" rows="6" required></textarea>
+            </div>
+        </div>
+
+        <div class="agreement-actions">
+            <a href="{{ url_for('employee_list') }}" class="btn-back">
+                <i class="fas fa-arrow-left"></i> Back to Employees
+            </a>
+            <button type="submit" class="btn-generate">
+                <i class="fas fa-file-signature"></i> Generate Agreement
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set minimum date for start_date to today
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('start_date').min = today;
+
+    // Update end_date minimum when start_date changes
+    document.getElementById('start_date').addEventListener('change', function() {
+        document.getElementById('end_date').min = this.value;
+    });
+});
+</script>
+{% endblock %} 

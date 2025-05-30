@@ -1,0 +1,372 @@
+{% extends "layout.html" %}
+
+{% block head %}
+<style>
+    .event-header {
+        background-color: #f8f9fa;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+    
+    .section-card {
+        border-radius: 0.5rem;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+    }
+    
+    .section-header {
+        background-color: #f8f9fa;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+    }
+    
+    .section-header h5 {
+        margin-bottom: 0;
+        font-weight: 600;
+        color: #212529;
+    }
+    
+    .section-content {
+        padding: 1.5rem;
+    }
+    
+    .event-meta {
+        font-size: 0.9rem;
+        color: #6c757d;
+    }
+    
+    .detail-label {
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        color: #495057;
+    }
+    
+    .detail-value {
+        margin-bottom: 1rem;
+    }
+    
+    .stage-badge {
+        font-size: 0.85rem;
+        padding: 0.35rem 0.65rem;
+        border-radius: 0.375rem;
+    }
+    
+    .profit-positive {
+        color: #198754;
+        font-weight: 500;
+    }
+    
+    .profit-negative {
+        color: #dc3545;
+        font-weight: 500;
+    }
+    
+    .notes-content {
+        background-color: #f8f9fa;
+        border-radius: 0.375rem;
+        padding: 1rem;
+        white-space: pre-line;
+    }
+
+    .contribution-table {
+        width: 100%;
+        margin-bottom: 1rem;
+    }
+
+    .contribution-table th,
+    .contribution-table td {
+        padding: 0.75rem;
+    }
+
+    .contribution-table .bg-light-info {
+        background-color: rgba(13, 202, 240, 0.1);
+    }
+
+    .contribution-table .bg-light-warning {
+        background-color: rgba(255, 193, 7, 0.1);
+    }
+
+    .contribution-table .text-end {
+        text-align: right;
+    }
+
+    .contribution-table .border-top {
+        border-top: 2px solid #dee2e6;
+    }
+
+    .contribution-details {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Event Header -->
+    <div class="event-header">
+        <div class="row align-items-center">
+            <div class="col-md-7">
+                <h1 class="h3 mb-2">{{ event.EventName }}</h1>
+                <div class="event-meta d-flex align-items-center">
+                    <span class="me-3"><i class="fas fa-map-marker-alt me-1"></i> {{ event.EventLocation }}</span>
+                    <span class="me-3"><i class="fas fa-calendar me-1"></i> {{ event.EventStart.strftime('%d %b %Y') }}</span>
+                </div>
+            </div>
+            <div class="col-md-5 text-md-end mt-3 mt-md-0">
+                <a href="{{ url_for('edit_event_unified', event_id=event.EventID) }}" class="btn btn-primary me-2">
+                    <i class="fas fa-edit me-1"></i> Edit Event
+                </a>
+                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteEventModal">
+                    <i class="fas fa-trash-alt me-1"></i> Delete Event
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Left Column -->
+        <div class="col-lg-8">
+            <!-- Event Details -->
+            <div class="section-card">
+                <div class="section-header">
+                    <h5><i class="fas fa-info-circle me-2"></i>Event Details</h5>
+                </div>
+                <div class="section-content">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="detail-label">Start Time</div>
+                            <div class="detail-value">
+                                <i class="far fa-clock me-1"></i> {{ event.EventStart.strftime('%d %b %Y, %H:%M') }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="detail-label">End Time</div>
+                            <div class="detail-value">
+                                <i class="far fa-clock me-1"></i> {{ event.EventEnd.strftime('%d %b %Y, %H:%M') }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="detail-label">Duration</div>
+                            <div class="detail-value">{{ event.EventDurationHours }} hours</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="detail-label">Total Hours</div>
+                            <div class="detail-value">{{ event.totalhours }} hours</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Staff Requirements -->
+            <div class="section-card">
+                <div class="section-header">
+                    <h5><i class="fas fa-users me-2"></i>Staff Requirements</h5>
+                </div>
+                <div class="section-content">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="detail-label">Waiters</div>
+                            <div class="detail-value">{{ event.WaitersNeeded }}</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="detail-label">Bartenders</div>
+                            <div class="detail-value">{{ event.BartendersNeeded }}</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="detail-label">Male Staff</div>
+                            <div class="detail-value">{{ event.MaleEmployees }}</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="detail-label">Female Staff</div>
+                            <div class="detail-value">{{ event.FemaleEmployees }}</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="detail-label">Total Employees</div>
+                            <div class="detail-value">{{ event.TotalEmployees }}</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="detail-label">Total Shift Hours</div>
+                            <div class="detail-value">{{ event.totalshifthours }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contribution Analysis -->
+            <div class="section-card">
+                <div class="section-header">
+                    <h5><i class="fas fa-chart-pie me-2"></i>Contribution Analysis</h5>
+                </div>
+                <div class="section-content">
+                    <table class="contribution-table">
+                        <thead>
+                            <tr>
+                                <th>Employee</th>
+                                <th>Hours</th>
+                                <th>Rate</th>
+                                <th>Gross</th>
+                                <th class="bg-light-info">Employee Contributions</th>
+                                <th class="bg-light-warning">Employer Contributions</th>
+                                <th>Net</th>
+                                <th>Total Cost</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for employee in employees %}
+                            <tr>
+                                <td>{{ employee.name }}</td>
+                                <td>{{ "%.2f"|format(employee.hours) }}</td>
+                                <td>€{{ "%.2f"|format(employee.rate) }}</td>
+                                <td>€{{ "%.2f"|format(employee.gross) }}</td>
+                                <td class="bg-light-info">
+                                    €{{ "%.2f"|format(employee.employee_contributions) }}
+                                    <div class="contribution-details">
+                                        Social: €{{ "%.2f"|format(employee.social_employee) }}<br>
+                                        GESY: €{{ "%.2f"|format(employee.gesy_employee) }}
+                                    </div>
+                                </td>
+                                <td class="bg-light-warning">
+                                    €{{ "%.2f"|format(employee.employer_contributions) }}
+                                    <div class="contribution-details">
+                                        Social: €{{ "%.2f"|format(employee.social_employer) }}<br>
+                                        GESY: €{{ "%.2f"|format(employee.gesy_employer) }}<br>
+                                        Funds: €{{ "%.2f"|format(employee.other_funds) }}
+                                    </div>
+                                </td>
+                                <td>€{{ "%.2f"|format(employee.net) }}</td>
+                                <td>€{{ "%.2f"|format(employee.total_cost) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr class="border-top">
+                                <td><strong>Totals</strong></td>
+                                <td><strong>{{ "%.2f"|format(total_hours) }}</strong></td>
+                                <td></td>
+                                <td><strong>€{{ "%.2f"|format(total_gross) }}</strong></td>
+                                <td class="bg-light-info"><strong>€{{ "%.2f"|format(total_employee_contributions) }}</strong></td>
+                                <td class="bg-light-warning"><strong>€{{ "%.2f"|format(total_employer_contributions) }}</strong></td>
+                                <td><strong>€{{ "%.2f"|format(total_net) }}</strong></td>
+                                <td><strong>€{{ "%.2f"|format(total_cost) }}</strong></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Notes Section -->
+            {% if event.notes %}
+            <div class="section-card">
+                <div class="section-header">
+                    <h5><i class="fas fa-sticky-note me-2"></i>Notes</h5>
+                </div>
+                <div class="section-content">
+                    <div class="notes-content">{{ event.notes }}</div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Right Column -->
+        <div class="col-lg-4">
+            <!-- Customer Information -->
+            <div class="section-card">
+                <div class="section-header">
+                    <h5><i class="fas fa-user me-2"></i>Customer</h5>
+                </div>
+                <div class="section-content">
+                    <div class="detail-label">Name</div>
+                    <div class="detail-value">{{ event.customername }}</div>
+                    
+                    {% if event.customerphone %}
+                    <div class="detail-label">Phone</div>
+                    <div class="detail-value">
+                        <a href="tel:{{ event.customerphone }}" class="text-decoration-none">
+                            <i class="fas fa-phone me-1"></i> {{ event.customerphone }}
+                        </a>
+                    </div>
+                    {% endif %}
+                    
+                    {% if event.customeremail %}
+                    <div class="detail-label">Email</div>
+                    <div class="detail-value">
+                        <a href="mailto:{{ event.customeremail }}" class="text-decoration-none">
+                            <i class="fas fa-envelope me-1"></i> {{ event.customeremail }}
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Financial Information -->
+            <div class="section-card">
+                <div class="section-header">
+                    <h5><i class="fas fa-pound-sign me-2"></i>Financial</h5>
+                </div>
+                <div class="section-content">
+                    <div class="detail-label">Cost Per Hour</div>
+                    <div class="detail-value">£{{ "%.2f"|format(event.EventPerHourcost|float) }}</div>
+                    
+                    <div class="detail-label">Selling Price Per Hour</div>
+                    <div class="detail-value">£{{ "%.2f"|format(event.EventPerHourselling|float) }}</div>
+                    
+                    <div class="detail-label">Total Cost</div>
+                    <div class="detail-value">£{{ "%.2f"|format(event.totalcost|float) }}</div>
+                    
+                    <div class="detail-label">Total Selling Price</div>
+                    <div class="detail-value">£{{ "%.2f"|format(event.totalselling|float) }}</div>
+                    
+                    <div class="detail-label">Total Profit</div>
+                    <div class="detail-value {% if event.totalprofit > 0 %}profit-positive{% elif event.totalprofit < 0 %}profit-negative{% endif %}">
+                        <strong>£{{ "%.2f"|format(event.totalprofit|float) }}</strong>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Actions Card -->
+            <div class="section-card">
+                <div class="section-header">
+                    <h5><i class="fas fa-tasks me-2"></i>Actions</h5>
+                </div>
+                <div class="section-content d-flex flex-column gap-2">
+                    <a href="{{ url_for('manage_all_shifts') }}?event_id={{ event.EventID }}" class="btn btn-outline-primary">
+                        <i class="fas fa-calendar-alt me-1"></i> Manage Shifts
+                    </a>
+                    <a href="{{ url_for('event_invoices', event_id=event.EventID) }}" class="btn btn-outline-success">
+                        <i class="fas fa-file-invoice me-1"></i> View Invoices
+                    </a>
+                    <button type="button" class="btn btn-outline-info">
+                        <i class="fas fa-print me-1"></i> Print Details
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Event Modal -->
+<div class="modal fade" id="deleteEventModal" tabindex="-1" aria-labelledby="deleteEventModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteEventModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this event: <strong>{{ event.EventName }}</strong>?</p>
+                <p class="text-danger">This action cannot be undone and will remove all associated shifts and assignments.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="{{ url_for('delete_event', event_id=event.EventID) }}" method="post">
+                    <button type="submit" class="btn btn-danger">Delete Event</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

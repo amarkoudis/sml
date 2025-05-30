@@ -1,0 +1,12 @@
+<nav class="admin-nav">
+    <div class="nav-brand">SML Admin</div>
+    <ul class="nav-links">
+        <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+        <li><a href="{{ url_for('user_list') }}">Users</a></li>
+        <li><a href="{{ url_for('home') }}">Main Site</a></li>
+        <li><a href="{{ url_for('logout') }}">Logout</a></li>
+    </ul>
+    <div class="user-info">
+        Logged in as: {{ username }}
+    </div>
+</nav> 

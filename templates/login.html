@@ -1,0 +1,208 @@
+{% extends "layout.html" %}
+
+{% block title %}Login - SML System{% endblock %}
+
+{% block styles %}
+<style>
+    .login-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #f5f8fa;
+    }
+    
+    .login-card {
+        width: 400px;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        background: white;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .login-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+    }
+    
+    .login-header {
+        background: linear-gradient(135deg, #4e73df 0%, #3855c1 100%);
+        color: white;
+        padding: 25px;
+        text-align: center;
+    }
+    
+    .login-title {
+        font-size: 28px;
+        font-weight: 600;
+        margin: 0;
+    }
+    
+    .login-subtitle {
+        font-size: 16px;
+        opacity: 0.8;
+        margin-top: 8px;
+    }
+    
+    .login-body {
+        padding: 30px;
+    }
+    
+    .login-form-group {
+        margin-bottom: 20px;
+        position: relative;
+    }
+    
+    .login-form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #334155;
+    }
+    
+    .login-form-group .form-icon {
+        position: absolute;
+        left: 12px;
+        top: 38px;
+        color: #64748b;
+    }
+    
+    .login-input {
+        width: 100%;
+        padding: 12px 16px 12px 40px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        background-color: #f8fafc;
+        transition: all 0.2s;
+        font-size: 15px;
+    }
+    
+    .login-input:focus {
+        outline: none;
+        border-color: #4f97fb;
+        box-shadow: 0 0 0 3px rgba(79, 151, 251, 0.25);
+        background-color: #fff;
+    }
+    
+    .login-button {
+        display: block;
+        width: 100%;
+        padding: 12px;
+        background: #4e73df;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 16px;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-top: 30px;
+    }
+    
+    .login-button:hover {
+        background: #3855c1;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(79, 151, 251, 0.3);
+    }
+    
+    .login-footer {
+        text-align: center;
+        margin-top: 25px;
+        color: #64748b;
+        font-size: 14px;
+    }
+    
+    .alert {
+        border-radius: 8px;
+        margin-bottom: 20px;
+        position: relative;
+        padding: 12px 15px;
+    }
+    
+    .alert-dismissible .close {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        color: inherit;
+        background: none;
+        border: none;
+        opacity: 0.6;
+        transition: opacity 0.2s;
+    }
+    
+    .alert-dismissible .close:hover {
+        opacity: 1;
+    }
+    
+    .forgot-password-link {
+        display: block;
+        text-align: right;
+        margin: -10px 0 20px;
+        color: #4e73df;
+        text-decoration: none;
+        font-size: 14px;
+        transition: color 0.2s;
+    }
+    
+    .forgot-password-link:hover {
+        color: #3855c1;
+        text-decoration: underline;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <h1 class="login-title">Welcome Back</h1>
+            <p class="login-subtitle">Sign in to continue to SML</p>
+        </div>
+        <div class="login-body">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="close" data-bs-dismiss="alert" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            <form method="POST" action="{{ url_for('login') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <div class="login-form-group">
+                    <label for="username">Username</label>
+                    <i class="fas fa-user form-icon"></i>
+                    <input type="text" class="login-input" id="username" name="username" placeholder="Enter your username" required>
+                </div>
+                
+                <div class="login-form-group">
+                    <label for="password">Password</label>
+                    <i class="fas fa-lock form-icon"></i>
+                    <input type="password" class="login-input" id="password" name="password" placeholder="Enter your password" required>
+                </div>
+                
+                <a href="{{ url_for('forgot_password_request') }}" class="forgot-password-link">Forgot Password?</a>
+                
+                <button type="submit" class="login-button">
+                    <i class="fas fa-sign-in-alt me-2"></i>Login
+                </button>
+            </form>
+            
+            <div class="login-footer">
+                <p>&copy; 2024 SML Management System. All rights reserved.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

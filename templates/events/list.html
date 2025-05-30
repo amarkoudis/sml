@@ -1,0 +1,850 @@
+{% extends "layout.html" %}
+
+{% block head %}
+<!-- Add Select2 CSS with proper caching and security headers -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" 
+      rel="stylesheet" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" 
+      rel="stylesheet" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<style>
+    /* Custom Styles for Events Page */
+    .event-row:hover {
+        background-color: rgba(13, 110, 253, 0.05);
+    }
+    
+    .profit-positive {
+        color: #198754;
+        font-weight: 500;
+    }
+    
+    .profit-negative {
+        color: #dc3545;
+        font-weight: 500;
+    }
+    
+    .event-actions {
+        white-space: nowrap;
+    }
+    
+    .table-responsive {
+        overflow-x: auto;
+    }
+    
+    .badge.event-stage {
+        font-size: 0.85em;
+    }
+    
+    .card {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        border-radius: 0.5rem;
+    }
+    
+    .search-box {
+        position: relative;
+    }
+    
+    .search-box .input-group-text {
+        background-color: transparent;
+        border-right: none;
+    }
+    
+    .search-box .form-control {
+        border-left: none;
+    }
+    
+    .pagination-info {
+        color: #6c757d;
+    }
+    
+    /* Modal styles */
+    .modal-header {
+        border-bottom: 1px solid #dee2e6;
+        background-color: #f8f9fa;
+    }
+    
+    .modal-footer {
+        border-top: 1px solid #dee2e6;
+        background-color: #f8f9fa;
+    }
+    
+    /* Status badge styling */
+    .badge.bg-draft { background-color: #6c757d; }
+    .badge.bg-confirmed { background-color: #0d6efd; }
+    .badge.bg-in-progress { background-color: #fd7e14; }
+    .badge.bg-completed { background-color: #198754; }
+    .badge.bg-cancelled { background-color: #dc3545; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page header with actions -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-6 mb-3 mb-md-0">
+                    <h1 class="h3 mb-0">Event Management</h1>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <button id="deleteSelectedBtn" class="btn btn-outline-danger me-2" style="display: none;">
+                        <i class="fas fa-trash-alt me-1"></i> Delete Selected
+                    </button>
+                    <a href="{{ url_for('create_event_page') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i> New Event
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Search and filters card -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form id="searchForm" action="{{ url_for('event_list') }}" method="get" class="row g-3">
+                <div class="col-md-6">
+                    <div class="search-box">
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="fas fa-search"></i>
+                            </span>
+                            <input type="text" name="search" class="form-control" 
+                                   placeholder="Search events by name, customer, location..." 
+                                   value="{{ search }}" aria-label="Search events">
+                            {% if search %}
+                            <button type="button" class="btn btn-outline-secondary" 
+                                    onclick="window.location.href='{{ url_for('event_list') }}';">
+                                <i class="fas fa-times"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select name="sort" class="form-select" onchange="this.form.submit()">
+                        <option value="EventStart" {% if sort_by == 'EventStart' %}selected{% endif %}>Sort by Date</option>
+                        <option value="EventName" {% if sort_by == 'EventName' %}selected{% endif %}>Sort by Name</option>
+                        <option value="customername" {% if sort_by == 'customername' %}selected{% endif %}>Sort by Customer</option>
+                        <option value="EventLocation" {% if sort_by == 'EventLocation' %}selected{% endif %}>Sort by Location</option>
+                        <option value="totalprofit" {% if sort_by == 'totalprofit' %}selected{% endif %}>Sort by Profit</option>
+                        <option value="EventStage" {% if sort_by == 'EventStage' %}selected{% endif %}>Sort by Status</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select name="dir" class="form-select" onchange="this.form.submit()">
+                        <option value="ASC" {% if sort_dir == 'ASC' %}selected{% endif %}>Ascending</option>
+                        <option value="DESC" {% if sort_dir == 'DESC' %}selected{% endif %}>Descending</option>
+                    </select>
+                </div>
+                <div class="col-md-1">
+                    <select name="per_page" class="form-select" onchange="this.form.submit()">
+                        <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
+                        <option value="25" {% if per_page == 25 %}selected{% endif %}>25</option>
+                        <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+                        <option value="100" {% if per_page == 100 %}selected{% endif %}>100</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Events Table -->
+    <div class="modern-card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table modern-table table-hover table-striped align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th width="30">
+                                <input type="checkbox" class="form-check-input" id="selectAllEvents">
+                            </th>
+                            <th>Event</th>
+                            <th>Customer</th>
+                            <th>Location</th>
+                            <th>Schedule</th>
+                            <th>Staff</th>
+                            <th class="text-end">Profit</th>
+                            <th width="100">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if events|length > 0 %}
+                            {% for event in events %}
+                            <tr class="event-row">
+                                <td>
+                                    <input type="checkbox" class="form-check-input event-checkbox" value="{{ event.EventID }}">
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('view_event', event_id=event.EventID) }}" class="text-decoration-underline text-primary">{{ event.EventName }}</a>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('event_list', customer_id=event.Customerid) }}" class="text-decoration-underline text-success {% if selected_customer_id == event.Customerid %}fw-bold{% endif %}">
+                                        {{ event.customername }}
+                                    </a>
+                                </td>
+                                <td>{{ event.EventLocation }}</td>
+                                <td>
+                                    {% if event.EventStart %}
+                                        <div>{{ event.EventStart.strftime('%d %b %Y') }}</div>
+                                        <small class="text-muted">
+                                            {{ event.EventStart.strftime('%H:%M') }}
+                                            {% if event.EventEnd %} - {{ event.EventEnd.strftime('%H:%M') }}{% endif %}
+                                        </small>
+                                    {% else %}
+                                        <div class="text-muted">Not scheduled</div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ event.TotalEmployees }} Staff</span>
+                                </td>
+                                <td class="text-end">
+                                    <span class="{% if event.totalprofit > 0 %}profit-positive{% elif event.totalprofit < 0 %}profit-negative{% endif %}">
+                                        £{{ "%.2f"|format(event.totalprofit|float) }}
+                                    </span>
+                                </td>
+                                <td class="event-actions">
+                                    <div class="btn-group btn-group-sm">
+                                        {% if event.EventID %}
+                                        <a href="{{ url_for('edit_event_unified', event_id=event.EventID) }}" class="btn btn-outline-primary" data-bs-toggle="tooltip" title="Edit Event">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        {% endif %}
+                                        <a href="{{ url_for('view_event', event_id=event.EventID) }}" class="btn btn-outline-info" data-bs-toggle="tooltip" title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <button class="btn btn-outline-success show-financials-btn" 
+                                                data-event-id="{{ event.EventID }}" 
+                                                data-event-name="{{ event.EventName }}"
+                                                data-total-cost="{{ event.totalcost }}"
+                                                data-total-selling="{{ event.totalselling }}"
+                                                data-total-profit="{{ event.totalprofit }}"
+                                                data-bs-toggle="tooltip" 
+                                                title="Financial Summary">
+                                            <i class="fas fa-chart-line"></i>
+                                        </button>
+                                        <button class="btn btn-outline-danger delete-event-btn" 
+                                                data-event-id="{{ event.EventID }}" 
+                                                data-event-name="{{ event.EventName }}"
+                                                data-bs-toggle="tooltip" 
+                                                title="Delete Event">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="9" class="text-center py-4">
+                                    <div class="text-muted">
+                                        <i class="fas fa-calendar-times fa-3x mb-3"></i>
+                                        <p>No events found{% if search %} matching "{{ search }}"{% endif %}.</p>
+                                        <a href="{{ url_for('create_event_page') }}" class="btn btn-primary">
+                                            <i class="fas fa-plus me-1"></i> Create New Event
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <div class="pagination-info">
+                    Showing {{ (current_page - 1) * per_page + 1 }}-{{ (current_page - 1) * per_page + events|length }} of {{ total_count }} events
+                </div>
+                
+                {% if total_pages > 1 %}
+                <nav aria-label="Events pagination">
+                    <ul class="pagination mb-0">
+                        <li class="page-item {% if current_page == 1 %}disabled{% endif %}">
+                            <a class="page-link" href="{{ url_for('event_list', page=current_page-1, search=search, sort=sort_by, dir=sort_dir, per_page=per_page) }}" aria-label="Previous">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                        
+                        {% set start_page = [current_page - 2, 1] | max %}
+                        {% set end_page = [start_page + 4, total_pages] | min %}
+                        {% set start_page = [end_page - 4, 1] | max %}
+                        
+                        {% if start_page > 1 %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('event_list', page=1, search=search, sort=sort_by, dir=sort_dir, per_page=per_page) }}">1</a>
+                        </li>
+                        {% if start_page > 2 %}
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                        {% endif %}
+                        
+                        {% for p in range(start_page, end_page + 1) %}
+                        <li class="page-item {% if p == current_page %}active{% endif %}">
+                            <a class="page-link" href="{{ url_for('event_list', page=p, search=search, sort=sort_by, dir=sort_dir, per_page=per_page) }}">{{ p }}</a>
+                        </li>
+                        {% endfor %}
+                        
+                        {% if end_page < total_pages %}
+                        {% if end_page < total_pages - 1 %}
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('event_list', page=total_pages, search=search, sort=sort_by, dir=sort_dir, per_page=per_page) }}">{{ total_pages }}</a>
+                        </li>
+                        {% endif %}
+                        
+                        <li class="page-item {% if current_page == total_pages %}disabled{% endif %}">
+                            <a class="page-link" href="{{ url_for('event_list', page=current_page+1, search=search, sort=sort_by, dir=sort_dir, per_page=per_page) }}" aria-label="Next">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal fade" id="deleteEventModal" tabindex="-1" aria-labelledby="deleteEventModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteEventModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the event: <strong id="deleteEventName"></strong>?</p>
+                <p class="text-danger">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <form id="deleteEventForm" action="" method="post">
+                    <input type="hidden" id="deleteEventId" name="event_id">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Delete Event</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Multiple Modal -->
+<div class="modal fade" id="deleteMultipleModal" tabindex="-1" aria-labelledby="deleteMultipleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteMultipleModalLabel">Confirm Multiple Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="deleteConfirmMessage">Are you sure you want to delete these events?</p>
+                <p class="text-danger">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <form action="{{ url_for('delete_multiple_events') }}" method="post">
+                    <input type="hidden" id="selectedEventIds" name="event_ids">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Delete Events</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add New Event Modal -->
+<div class="modal fade" id="addEventModal" tabindex="-1" aria-labelledby="addEventModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="addEventModalLabel">
+                    <i class="fas fa-calendar-plus me-2"></i>Create New Event
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="form-section-title fw-bold mb-3">Event Details</h6>
+                        <div class="mb-3">
+                            <label for="eventName" class="form-label">Event Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="eventName" name="event_name" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="customerId" class="form-label">Customer <span class="text-danger">*</span></label>
+                            <select class="form-select select2" id="customerId" name="customer_id" required>
+                                <option value="">Select a customer</option>
+                                {% for customer in customers %}
+                                <option value="{{ customer.customerid }}">{{ customer.customername }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="eventLocation" class="form-label">Location <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="eventLocation" name="event_location" required>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h6 class="form-section-title fw-bold mb-3">Date & Time</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="eventStartDate" class="form-label">Start Date <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control datepicker" id="eventStartDate" name="event_start_date" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="eventStartTime" class="form-label">Start Time <span class="text-danger">*</span></label>
+                                    <input type="time" class="form-control" id="eventStartTime" name="event_start_time" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="eventEndDate" class="form-label">End Date <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control datepicker" id="eventEndDate" name="event_end_date" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="eventEndTime" class="form-label">End Time <span class="text-danger">*</span></label>
+                                    <input type="time" class="form-control" id="eventEndTime" name="event_end_time" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="eventStage" class="form-label">Status</label>
+                            <select class="form-select" id="eventStage" name="event_stage">
+                                <option value="Draft">Draft</option>
+                                <option value="Confirmed">Confirmed</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Completed">Completed</option>
+                                <option value="Cancelled">Cancelled</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <h6 class="form-section-title fw-bold mt-4 mb-3">Staff Requirements</h6>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="waitersNeeded" class="form-label">Waiters Needed</label>
+                            <input type="number" class="form-control" id="waitersNeeded" name="waiters_needed" min="0" value="0">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="bartendersNeeded" class="form-label">Bartenders Needed</label>
+                            <input type="number" class="form-control" id="bartendersNeeded" name="bartenders_needed" min="0" value="0">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="totalEmployees" class="form-label">Total Employees</label>
+                            <input type="number" class="form-control" id="totalEmployees" name="total_employees" min="0" value="0">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="eventNotes" class="form-label">Notes</label>
+                    <textarea class="form-control" id="eventNotes" name="notes" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+                <a href="{{ url_for('create_event_page') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Create Event
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Shift Modal -->
+<div class="modal fade" id="addShiftModal" tabindex="-1" aria-labelledby="addShiftModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="addShiftModalLabel">
+                    <i class="fas fa-clock me-2"></i>Add Shift
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="addShiftForm" action="{{ url_for('add_shift') }}" method="post">
+                    <input type="hidden" id="addShiftEventId" name="event_id">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="shift_name" class="form-label">Shift Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="shift_name" name="shift_name" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="shift_type" class="form-label">Shift Type <span class="text-danger">*</span></label>
+                                <select class="form-select" id="shift_type" name="shift_type" required>
+                                    <option value="Regular">Regular</option>
+                                    <option value="Overtime">Overtime</option>
+                                    <option value="Holiday">Holiday</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="shift_start" class="form-label">Shift Start Time <span class="text-danger">*</span></label>
+                                <input type="datetime-local" class="form-control" id="shift_start" name="shift_start" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="shift_end" class="form-label">Shift End Time <span class="text-danger">*</span></label>
+                                <input type="datetime-local" class="form-control" id="shift_end" name="shift_end" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="shift_employees_needed" class="form-label">Employees Needed <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="shift_employees_needed" name="employees_needed" min="1" value="1" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="shift_location" class="form-label">Location</label>
+                                <input type="text" class="form-control" id="shift_location" name="shift_location">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="shift_position" class="form-label">Position</label>
+                                <input type="text" class="form-control" id="shift_position" name="shift_position">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="shift_notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="shift_notes" name="shift_notes" rows="2"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+                <button type="submit" form="addShiftForm" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Add Shift
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Financial Summary Modal -->
+<div class="modal fade" id="financialSummaryModal" tabindex="-1" aria-labelledby="financialSummaryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="financialSummaryModalLabel">
+                    <i class="fas fa-chart-line me-2"></i>Financial Summary
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <h4 id="financial-event-name" class="mb-4 text-center"></h4>
+                
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="card h-100 border-0 shadow-sm">
+                            <div class="card-body text-center">
+                                <h6 class="text-muted mb-2">Total Cost</h6>
+                                <h3 id="financial-total-cost" class="mb-0 text-danger">£0.00</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card h-100 border-0 shadow-sm">
+                            <div class="card-body text-center">
+                                <h6 class="text-muted mb-2">Total Revenue</h6>
+                                <h3 id="financial-total-selling" class="mb-0 text-primary">£0.00</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card h-100 border-0 shadow-sm">
+                            <div class="card-body text-center">
+                                <h6 class="text-muted mb-2">Profit</h6>
+                                <h3 id="financial-total-profit" class="mb-0 text-success">£0.00</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-light py-3">
+                        <h5 class="mb-0">Profit Breakdown</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div style="height: 250px;">
+                            <canvas id="financialSummaryChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Close
+                </button>
+                <a id="view-event-details-btn" href="#" class="btn btn-primary">
+                    <i class="fas fa-eye me-2"></i>View Event Details
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<!-- Add Select2 JS with proper caching and security headers -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js" 
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Select2 with Bootstrap 5 theme
+        $('.select2').select2({
+            theme: 'bootstrap-5',
+            width: '100%'
+        });
+
+        // Initialize all tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+
+        // Initialize the delete multiple modal
+        const deleteMultipleModal = new bootstrap.Modal(document.getElementById('deleteMultipleModal'));
+        
+        // Function to update total hours assigned
+        function updateTotalHoursAssigned() {
+            const hoursElements = document.querySelectorAll('.hours-assigned');
+            let totalHours = 0;
+            
+            hoursElements.forEach(function(element) {
+                const hours = parseFloat(element.textContent || '0');
+                if (!isNaN(hours)) {
+                    totalHours += hours;
+                }
+            });
+            
+            const totalElement = document.getElementById('totalHoursAssigned');
+            if (totalElement) {
+                totalElement.textContent = totalHours.toFixed(1);
+            }
+        }
+        
+        // Function to update event duration
+        function updateEventDuration() {
+            const durationElements = document.querySelectorAll('.event-duration');
+            let totalDuration = 0;
+            
+            durationElements.forEach(function(element) {
+                const duration = parseFloat(element.dataset.duration || '0');
+                if (!isNaN(duration)) {
+                    totalDuration += duration;
+                }
+            });
+            
+            const totalElement = document.getElementById('totalEventDuration');
+            if (totalElement) {
+                totalElement.textContent = totalDuration.toFixed(1);
+            }
+        }
+        
+        // Call these functions when the page loads
+        updateTotalHoursAssigned();
+        updateEventDuration();
+        
+        // Function to handle multiple delete
+        function handleMultiSelect() {
+            const checkboxes = document.querySelectorAll('.event-checkbox:checked');
+            const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+            
+            if (checkboxes.length > 0) {
+                deleteSelectedBtn.style.display = 'inline-block';
+                deleteSelectedBtn.disabled = false;
+                
+                // Update the confirmation message
+                const confirmMessage = document.getElementById('deleteConfirmMessage');
+                confirmMessage.textContent = `Are you sure you want to delete ${checkboxes.length} event${checkboxes.length > 1 ? 's' : ''}?`;
+                
+                // Collect the selected event IDs
+                const selectedIds = Array.from(checkboxes).map(checkbox => checkbox.value);
+                document.getElementById('selectedEventIds').value = selectedIds.join(',');
+            } else {
+                deleteSelectedBtn.style.display = 'none';
+                deleteSelectedBtn.disabled = true;
+            }
+        }
+        
+        // Add event listener to the delete selected button
+        const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+        if (deleteSelectedBtn) {
+            deleteSelectedBtn.addEventListener('click', function() {
+                deleteMultipleModal.show();
+            });
+        }
+        
+        // Add event listeners to all checkboxes
+        const checkboxes = document.querySelectorAll('.event-checkbox');
+        checkboxes.forEach(function(checkbox) {
+            checkbox.addEventListener('change', handleMultiSelect);
+        });
+        
+        // Master checkbox to select/deselect all
+        const selectAllCheckbox = document.getElementById('selectAllEvents');
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', function() {
+                checkboxes.forEach(function(checkbox) {
+                    checkbox.checked = selectAllCheckbox.checked;
+                });
+                handleMultiSelect();
+            });
+        }
+        
+        // Initial check for multi-select
+        handleMultiSelect();
+
+        // Initialize all delete buttons
+        document.querySelectorAll('.delete-event-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const eventId = this.getAttribute('data-event-id');
+                const eventName = this.getAttribute('data-event-name');
+                
+                document.getElementById('deleteEventId').value = eventId;
+                document.getElementById('deleteEventName').textContent = eventName;
+                
+                // Update the form action with the proper event ID
+                const deleteForm = document.getElementById('deleteEventForm');
+                deleteForm.action = "{{ url_for('delete_event', event_id=0) }}".replace('0', eventId);
+                
+                const deleteModal = new bootstrap.Modal(document.getElementById('deleteEventModal'));
+                deleteModal.show();
+            });
+        });
+        
+        // Initialize datepicker
+        if (typeof flatpickr !== 'undefined') {
+            flatpickr('.datepicker', {
+                dateFormat: 'Y-m-d',
+                allowInput: true
+            });
+        }
+
+        // Financial Summary Modal
+        let financialChart = null;
+        
+        document.querySelectorAll('.show-financials-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const eventId = this.getAttribute('data-event-id');
+                const eventName = this.getAttribute('data-event-name');
+                const totalCost = parseFloat(this.getAttribute('data-total-cost')).toFixed(2);
+                const totalSelling = parseFloat(this.getAttribute('data-total-selling')).toFixed(2);
+                const totalProfit = parseFloat(this.getAttribute('data-total-profit')).toFixed(2);
+                
+                // Update modal content
+                document.getElementById('financial-event-name').textContent = eventName;
+                document.getElementById('financial-total-cost').textContent = '£' + totalCost;
+                document.getElementById('financial-total-selling').textContent = '£' + totalSelling;
+                
+                const profitElement = document.getElementById('financial-total-profit');
+                profitElement.textContent = '£' + totalProfit;
+                
+                // Set profit color based on value
+                if (parseFloat(totalProfit) > 0) {
+                    profitElement.classList.remove('text-danger');
+                    profitElement.classList.add('text-success');
+                } else {
+                    profitElement.classList.remove('text-success');
+                    profitElement.classList.add('text-danger');
+                }
+                
+                // Create or update the chart
+                const ctx = document.getElementById('financialSummaryChart').getContext('2d');
+                
+                if (financialChart) {
+                    financialChart.destroy();
+                }
+                
+                financialChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Cost', 'Revenue', 'Profit'],
+                        datasets: [{
+                            label: 'Financial Summary (£)',
+                            data: [
+                                parseFloat(totalCost),
+                                parseFloat(totalSelling),
+                                parseFloat(totalProfit)
+                            ],
+                            backgroundColor: [
+                                'rgba(220, 53, 69, 0.7)',
+                                'rgba(13, 110, 253, 0.7)',
+                                parseFloat(totalProfit) > 0 ? 'rgba(25, 135, 84, 0.7)' : 'rgba(220, 53, 69, 0.7)'
+                            ],
+                            borderColor: [
+                                'rgb(220, 53, 69)',
+                                'rgb(13, 110, 253)',
+                                parseFloat(totalProfit) > 0 ? 'rgb(25, 135, 84)' : 'rgb(220, 53, 69)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return '£' + value.toFixed(2);
+                                    }
+                                }
+                            }
+                        },
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return '£' + context.parsed.y.toFixed(2);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                // Show the modal
+                const financialModal = new bootstrap.Modal(document.getElementById('financialSummaryModal'));
+                financialModal.show();
+            });
+        });
+    });
+</script>
+{% endblock %}

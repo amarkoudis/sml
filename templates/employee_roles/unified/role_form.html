@@ -1,0 +1,68 @@
+{% extends 'layout.html' %}
+
+{% block title %}
+    {% if is_edit_mode %}Edit Employee Role{% else %}Add New Employee Role{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">{% if is_edit_mode %}Edit Employee Role{% else %}Add New Employee Role{% endif %}</h1>
+            <div class="mt-2 text-muted">
+                {% if is_edit_mode %}Update the employee role details{% else %}Create a new employee role{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-user-tag text-primary me-2"></i>
+                        Role Information
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('role_unified_submit') }}" method="post" class="needs-validation" novalidate>
+                        {% if is_edit_mode %}
+                        <input type="hidden" name="role_id" value="{{ role.employeeroleid }}">
+                        {% endif %}
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label for="role_name" class="form-label required">Role Name</label>
+                                <input type="text" class="form-control" id="role_name" name="role_name" 
+                                    value="{{ role.employeerolename if is_edit_mode else '' }}" required>
+                                <div class="invalid-feedback">Please provide a role name.</div>
+                            </div>
+                        </div>
+                        <div class="form-footer">
+                            <a href="{{ url_for('employee_roles_list') }}" class="btn btn-link">Cancel</a>
+                            <button type="submit" class="btn btn-primary">
+                                {% if is_edit_mode %}Update Role{% else %}Create Role{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form validation
+    var forms = document.querySelectorAll('.needs-validation');
+    Array.prototype.slice.call(forms).forEach(function(form) {
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    });
+});
+</script>
+{% endblock %} 

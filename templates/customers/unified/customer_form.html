@@ -1,0 +1,117 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="container-fluid">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="row align-items-center mb-4">
+                <div class="col">
+                    <h1 class="page-header-title">
+                        <i class="fas fa-user text-primary"></i>
+                        {% if is_edit_mode %}Edit{% else %}New{% endif %} Customer
+                    </h1>
+                    <p class="page-header-subtitle">{% if is_edit_mode %}Update existing{% else %}Add a new{% endif %} customer to your database</p>
+                </div>
+                <div class="col-auto">
+                    <a href="{{ url_for('customer_list') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left me-1"></i> Back to Customers
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Customer Form Card -->
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h5 class="card-header-title">Customer Information</h5>
+            </div>
+            <div class="card-body">
+                <form id="customerForm" method="POST" action="{% if is_edit_mode %}{{ url_for('edit_customer', customer_id=customer.customerid) }}{% else %}{{ url_for('create_customer') }}{% endif %}" class="needs-validation" novalidate>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="customername" class="form-label">Customer Name <span class="text-danger">*</span></label>
+                            <input type="text" id="customername" name="customername" class="form-control" 
+                                value="{% if is_edit_mode %}{{ customer.customername }}{% endif %}" required>
+                            <div class="invalid-feedback">
+                                Please provide a customer name
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="contactpersonname" class="form-label">Contact Person <span class="text-danger">*</span></label>
+                            <input type="text" id="contactpersonname" name="contactpersonname" class="form-control" 
+                                value="{% if is_edit_mode %}{{ customer.contactpersonname }}{% endif %}" required>
+                            <div class="invalid-feedback">
+                                Please provide a contact person
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="customeraddress" class="form-label">Address <span class="text-danger">*</span></label>
+                        <textarea id="customeraddress" name="customeraddress" class="form-control" rows="3" required>{% if is_edit_mode %}{{ customer.customeraddress }}{% endif %}</textarea>
+                        <div class="invalid-feedback">
+                            Please provide a valid address
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="customerphone" class="form-label">Phone <span class="text-danger">*</span></label>
+                            <input type="tel" id="customerphone" name="customerphone" class="form-control"
+                                value="{% if is_edit_mode %}{{ customer.customerphone }}{% endif %}" required>
+                            <div class="invalid-feedback">
+                                Please provide a valid phone number
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="customeremail" class="form-label">Email <span class="text-danger">*</span></label>
+                            <input type="email" id="customeremail" name="customeremail" class="form-control"
+                                value="{% if is_edit_mode %}{{ customer.customeremail }}{% endif %}" required>
+                            <div class="invalid-feedback">
+                                Please provide a valid email address
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="bankid" class="form-label">Bank</label>
+                        <select id="bankid" name="bankid" class="form-select">
+                            <option value="">Select Bank</option>
+                            {% for bank in banks %}
+                            <option value="{{ bank.bankid }}" {% if is_edit_mode and customer.bankid == bank.bankid %}selected{% endif %}>
+                                {{ bank.bankname }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end">
+                        <a href="{{ url_for('customer_list') }}" class="btn btn-outline-secondary me-2">Cancel</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i> {% if is_edit_mode %}Update{% else %}Save{% endif %} Customer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Form validation
+        const forms = document.querySelectorAll('.needs-validation');
+        
+        Array.from(forms).forEach(form => {
+            form.addEventListener('submit', event => {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    });
+</script>
+{% endblock %} 

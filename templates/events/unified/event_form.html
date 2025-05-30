@@ -1,0 +1,3256 @@
+{% extends 'layout.html' %}
+
+{% block title %}{% if is_edit_mode %}Edit{% else %}Create{% endif %} Event{% endblock %}
+
+{% block styles %}
+<style>
+    /* Event form specific styles */
+    .content-wrapper {
+        display: flex;
+        gap: 20px;
+    }
+    
+    .form-content {
+        flex: 1;
+        margin-left: 20px;
+        padding-bottom: 40px; /* Add padding at the bottom */
+        overflow-y: auto; /* Allow this section to scroll independently */
+        max-height: calc(100vh - 100px); /* Set a max height for scrolling */
+    }
+    
+    /* Override global sidebar styles */
+    .content-wrapper .form-sidebar {
+        position: sticky;
+        top: 80px; /* Adjust this value based on your header height */
+        width: auto !important;
+        min-width: 240px;
+        height: calc(100vh - 120px);
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        z-index: 10;
+        align-self: flex-start; /* Ensures the sidebar stays at the top */
+    }
+    
+    .content-wrapper .sidebar-header {
+        padding: 20px;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .content-wrapper .sidebar-title {
+        margin: 0;
+        color: #1e293b;
+        font-weight: 600;
+        display: block !important;
+    }
+    
+    .content-wrapper .sidebar-nav {
+        padding: 10px 0;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+    }
+    
+    .content-wrapper .nav-item {
+        display: flex !important;
+        align-items: center;
+        padding: 12px 20px;
+        color: #475569;
+        text-decoration: none;
+        transition: all 0.2s;
+        font-size: 0.95rem;
+        border-left: 3px solid transparent;
+        justify-content: flex-start !important;
+    }
+    
+    .content-wrapper .nav-item:hover {
+        background: #f8fafc;
+        color: #1e293b;
+    }
+    
+    .content-wrapper .nav-item.active {
+        background: #f0f7ff;
+        color: #2563eb;
+        border-left: 3px solid #2563eb;
+        font-weight: 500;
+    }
+    
+    .content-wrapper .nav-item i {
+        width: 20px;
+        margin-right: 12px !important;
+        font-size: 1rem;
+        text-align: center;
+    }
+    
+    .content-wrapper .nav-text {
+        display: inline-block !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        flex: 1;
+    }
+    
+    .modern-card {
+        background: #fff;
+        border-radius: 14px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+    }
+    
+    .card-header {
+        padding: 20px;
+        border-bottom: 1px solid #e0e0e0;
+        background: #fff;
+    }
+    
+    .card-header h4 {
+        margin: 0;
+        color: #1e293b;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+    
+    .card-body {
+        padding: 20px;
+    }
+    
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    
+    .form-group label {
+        font-weight: 500;
+        color: #475569;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-control {
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 0.75rem;
+        transition: all 0.2s;
+    }
+    
+    .form-control:focus {
+        border-color: #4f97fb;
+        box-shadow: 0 0 0 2px rgba(79, 151, 251, 0.1);
+    }
+    
+    /* Responsive table styles */
+    .table-responsive {
+        margin: 1rem 0;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .table {
+        margin-bottom: 0;
+    }
+    
+    .table th {
+        background: #f8fafc;
+        font-weight: 600;
+        color: #475569;
+    }
+    
+    .table td, .table th {
+        padding: 1rem;
+        vertical-align: middle;
+    }
+    
+    /* Button styles */
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 6px;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+    
+    .btn-primary {
+        background: #4f97fb;
+        border-color: #4f97fb;
+    }
+    
+    .btn-primary:hover {
+        background: #2d7ff7;
+        border-color: #2d7ff7;
+    }
+    
+    /* Modal styles */
+    .modal-content {
+        border-radius: 12px;
+        border: none;
+    }
+    
+    .modal-header {
+        border-bottom: 1px solid #e0e0e0;
+        padding: 1.25rem;
+    }
+    
+    .modal-body {
+        padding: 1.5rem;
+    }
+    
+    .modal-footer {
+        border-top: 1px solid #e0e0e0;
+        padding: 1.25rem;
+    }
+    
+    /* Add smooth scrolling for the entire document */
+    html {
+        scroll-behavior: smooth;
+    }
+    
+    /* Force Assign Employees modal to use full width up to 1200px, overriding Bootstrap and custom classes */
+    .assign-employees-modal__dialog {
+        width: 100vw !important;
+        max-width: 1200px !important;
+        margin: 0 auto !important;
+        left: 0 !important;
+        right: 0 !important;
+    }
+    .assign-employees-modal__dialog .modal-content {
+        width: 100% !important;
+        max-width: 1200px !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border-radius: 18px !important;
+        box-shadow: 0 8px 32px rgba(60, 72, 88, 0.18), 0 1.5px 6px rgba(60, 72, 88, 0.10);
+        border: 1.5px solid #e3e8ee !important;
+        background: #f8fafc;
+    }
+    .assign-employees-modal__body {
+        padding: 0 !important;
+        width: 100% !important;
+        background: #f8fafc;
+        border-radius: 0 0 18px 18px;
+    }
+    .assign-employees-modal__table-responsive {
+        overflow-x: unset !important;
+        min-width: unset !important;
+        width: 100% !important;
+        padding: 0 !important;
+    }
+    .assign-employees-modal__table {
+        width: 100% !important;
+        min-width: unset !important;
+        table-layout: auto !important;
+        border-radius: 12px;
+        border: 1px solid #e3e8ee;
+        overflow: hidden;
+        background: #fff;
+    }
+    .assign-employees-modal__table th,
+    .assign-employees-modal__table td {
+        padding: 0.75rem 1rem !important;
+        vertical-align: middle !important;
+        border-color: #e3e8ee !important;
+    }
+    .assigned-staff-cell {
+        min-width: 200px;
+        max-width: 300px;
+    }
+    .assigned-staff-cell div:last-child {
+        margin-bottom: 0 !important;
+    }
+    
+    /* Shift Management Section Styles */
+    #section-shifts .card-body {
+        padding: 1.5rem;
+    }
+    
+    #section-shifts .table-responsive {
+        margin: 0;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    #section-shifts .table {
+        margin-bottom: 0;
+        font-size: 0.95rem;
+    }
+    
+    #section-shifts .table th {
+        background: #f8fafc;
+        font-weight: 600;
+        color: #475569;
+        padding: 1rem;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid #e2e8f0;
+    }
+    
+    #section-shifts .table td {
+        padding: 1rem;
+        vertical-align: middle;
+        border-color: #e2e8f0;
+    }
+    
+    #section-shifts .assigned-staff-cell {
+        min-width: 250px;
+        max-width: 350px;
+        line-height: 1.5;
+    }
+    
+    #section-shifts .assigned-staff-cell div {
+        margin-bottom: 0.5rem;
+        font-size: 0.95rem;
+    }
+    
+    #section-shifts .assigned-staff-cell div:last-child {
+        margin-bottom: 0;
+    }
+    
+    #section-shifts .assigned-staff-cell .text-muted {
+        font-size: 0.85rem;
+    }
+    
+    #section-shifts .btn-group-sm .btn {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.85rem;
+    }
+    
+    #section-shifts .btn-group-sm .btn i {
+        font-size: 0.9rem;
+    }
+    
+    #section-shifts .card-header {
+        padding: 1.25rem 1.5rem;
+        background: #fff;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    
+    #section-shifts .card-header h4 {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #1e293b;
+    }
+    
+    #section-shifts .card-header .btn-primary {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+    
+    #section-shifts .no-shifts-row td {
+        padding: 3rem 1rem;
+    }
+    
+    #section-shifts .no-shifts-row .fa-clock {
+        color: #94a3b8;
+        margin-bottom: 1rem;
+    }
+    
+    #section-shifts .no-shifts-row h5 {
+        font-size: 1.1rem;
+        color: #64748b;
+        margin-bottom: 0.5rem;
+    }
+    
+    #section-shifts .no-shifts-row p {
+        font-size: 0.9rem;
+        color: #94a3b8;
+        margin-bottom: 1rem;
+    }
+    
+    #section-shifts .no-shifts-row .btn {
+        font-size: 0.9rem;
+        padding: 0.5rem 1rem;
+    }
+    
+    /* Shift Duration Error Styles */
+    #shiftDurationError {
+        margin-top: 1rem;
+        padding: 1rem;
+        border-radius: 6px;
+        font-size: 0.95rem;
+    }
+    
+    #shiftDurationError .alert {
+        margin-bottom: 0;
+    }
+    
+    /* Add Shift Button Styles */
+    #section-shifts .mb-3.text-center {
+        margin-bottom: 1.5rem !important;
+    }
+    
+    #section-shifts .btn-outline-primary {
+        font-size: 0.9rem;
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+    }
+    
+    #section-shifts .btn-outline-primary i {
+        margin-right: 0.5rem;
+    }
+    
+    /* Add these styles to your existing styles */
+    #section-shifts .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: flex-start;
+    }
+    
+    #section-shifts .action-btn {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+    }
+    
+    #section-shifts .action-btn:hover {
+        transform: translateY(-1px);
+    }
+    
+    #section-shifts .action-btn.edit-btn {
+        color: #2563eb;
+        border-color: #2563eb;
+    }
+    
+    #section-shifts .action-btn.edit-btn:hover {
+        background-color: #2563eb;
+        color: white;
+    }
+    
+    #section-shifts .action-btn.delete-btn {
+        color: #dc2626;
+        border-color: #dc2626;
+    }
+    
+    #section-shifts .action-btn.delete-btn:hover {
+        background-color: #dc2626;
+        color: white;
+    }
+    
+    #section-shifts .action-btn.staff-btn {
+        color: #059669;
+        border-color: #059669;
+    }
+    
+    #section-shifts .action-btn.staff-btn:hover {
+        background-color: #059669;
+        color: white;
+    }
+    
+    #section-shifts .action-btn i {
+        font-size: 0.9rem;
+    }
+    
+    /* Tooltip styles */
+    .tooltip {
+        font-size: 0.85rem;
+    }
+    
+    .tooltip-inner {
+        padding: 0.4rem 0.8rem;
+        border-radius: 4px;
+    }
+    
+    .modern-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        background: #f9f9f9;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    .modern-table th, .modern-table td {
+        padding: 0.75rem 1rem;
+        vertical-align: middle;
+        border: none;
+    }
+    .modern-table thead th {
+        background: #f1f3f7;
+        font-weight: 600;
+        color: #333;
+        border-bottom: 2px solid #e5e7eb;
+    }
+    .modern-table tbody tr {
+        transition: background 0.2s;
+    }
+    .modern-table tbody tr:hover {
+        background: #f0f6ff;
+    }
+    .modern-table tr {
+        border-radius: 10px;
+    }
+    .modern-table td {
+        background: #fff;
+    }
+    .badge.bg-success {
+        background: #22c55e;
+        color: #fff;
+        font-size: 0.9em;
+        border-radius: 6px;
+        padding: 0.3em 0.7em;
+    }
+    .btn-outline-primary, .btn-outline-danger {
+        border-radius: 6px;
+        margin-left: 0.25em;
+    }
+</style>
+
+<!-- Fix for navigation links -->
+<script>
+window.addEventListener('load', function() {
+    const navLinks = document.querySelectorAll('.form-sidebar .nav-item[data-section]');
+    
+    navLinks.forEach(function(link) {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const targetId = this.dataset.section;
+            if (!targetId) return;
+            const targetSection = document.querySelector(targetId);
+            if (!targetSection) return;
+
+            // Update active state
+            navLinks.forEach(function(navItem) { 
+                navItem.classList.remove('active');
+            });
+            this.classList.add('active');
+
+            // Scroll to section with offset for fixed header
+            targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            setTimeout(function() {
+                window.scrollBy(0, -100); // Adjust -100 to your header height
+            }, 300);
+        });
+    });
+    
+    // Action buttons (save, cancel)
+    const actionButtons = document.querySelectorAll('.form-sidebar .nav-item[data-action]');
+    actionButtons.forEach(function(button) {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const action = this.dataset.action;
+            if (action === 'save-form') {
+                document.getElementById('event-form').submit();
+            } else if (action === 'cancel-form') {
+                if (confirm('Are you sure you want to cancel? Changes will be lost.')) {
+                    window.location.href = '{{ url_for("event_list") }}';
+                }
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    {% include 'events/unified/sidebar.html' %}
+    
+    <div class="form-content">
+        <form id="event-form" method="POST" action="{% if is_edit_mode %}{{ url_for('update_event_submit_unified', event_id=event.EventID) }}{% else %}{{ url_for('create_event_submit_unified') }}{% endif %}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" id="shifts_data" name="shifts_data" value="">
+            {% if is_edit_mode %}
+            <input type="hidden" name="event_id" value="{{ event.EventID }}">
+            {% endif %}
+            
+            <!-- Basic Information Section -->
+            <div id="section-basic" class="modern-card">
+                <div class="card-header" id="basic">
+                    <h4>Basic Information</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="Customerid">Customer</label>
+                                <select class="form-control" id="Customerid" name="Customerid" required>
+                                    <option value="">Select Customer</option>
+                                    {% for customer in customers %}
+                                    <option value="{{ customer.customerid }}" {% if event and event.Customerid|int == customer.customerid|int %}selected{% endif %}>
+                                        {{ customer.customername }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="EventName">Event Name</label>
+                                <input type="text" class="form-control" id="EventName" name="EventName" 
+                                    value="{{ event.EventName if event else '' }}" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="EventStart">Start Date & Time</label>
+                                <input type="datetime-local" class="form-control" id="EventStart" name="EventStart" 
+                                    value="{{ event.EventStart|datetimeformat if event and event.EventStart else '' }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="EventEnd">End Date & Time</label>
+                                <input type="datetime-local" class="form-control" id="EventEnd" name="EventEnd" 
+                                    value="{{ event.EventEnd|datetimeformat if event and event.EventEnd else '' }}" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="EventDurationHours">Duration (Hours)</label>
+                                <input type="text" class="form-control" id="EventDurationHours" name="EventDurationHours" 
+                                    value="{{ event.EventDurationHours if event else '' }}" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="EventLocation">Location</label>
+                                <input type="text" class="form-control" id="EventLocation" name="EventLocation" 
+                                    value="{{ event.EventLocation if event else '' }}" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Staff Requirements Section -->
+            <div id="section-staff" class="modern-card">
+                <div class="card-header" id="staff">
+                    <h4>Staff Requirements</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="WaitersNeeded">Waiters Needed</label>
+                                <input type="number" class="form-control" id="WaitersNeeded" name="WaitersNeeded" 
+                                    value="{{ event.WaitersNeeded if event else '0' }}" min="0">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="BartendersNeeded">Bartenders Needed</label>
+                                <input type="number" class="form-control" id="BartendersNeeded" name="BartendersNeeded" 
+                                    value="{{ event.BartendersNeeded if event else '0' }}" min="0">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="MaleEmployees">Male Employees</label>
+                                <input type="number" class="form-control" id="MaleEmployees" name="MaleEmployees" 
+                                    value="{{ event.MaleEmployees if event else '0' }}" min="0">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="FemaleEmployees">Female Employees</label>
+                                <input type="number" class="form-control" id="FemaleEmployees" name="FemaleEmployees" 
+                                    value="{{ event.FemaleEmployees if event else '0' }}" min="0">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label for="TotalEmployees">Total Employees</label>
+                                <input type="number" class="form-control" id="TotalEmployees" name="TotalEmployees" 
+                                    value="{{ event.TotalEmployees if event else '0' }}" readonly>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Shift Management Section -->
+            <div id="section-shifts" class="modern-card">
+                <div class="card-header d-flex justify-content-between align-items-center" id="shifts">
+                    <h4>Shift Management</h4>
+                    <div>
+                        <button type="button" class="btn btn-outline-primary me-2" onclick="exportShiftsToPDF()">
+                            <i class="fas fa-file-pdf"></i> Export PDF
+                        </button>
+                        <button type="button" class="btn btn-outline-success me-2" onclick="exportShiftsToExcel()">
+                            <i class="fas fa-file-excel"></i> Export Excel
+                        </button>
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#shiftModal" onclick="resetShiftModal()">
+                            <i class="fas fa-plus"></i> Add Shift
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3 text-center">
+                        <button type="button" class="btn btn-outline-primary me-2" data-bs-toggle="modal" data-bs-target="#shiftModal" onclick="resetShiftModal()">
+                            <i class="fas fa-plus-circle"></i> Create New Shift
+                        </button>
+                        <!-- Remove manage all shifts button as it navigates away -->
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover" id="shiftsTable">
+                            <thead>
+                                <tr>
+                                    <th>Start Time</th>
+                                    <th>End Time</th>
+                                    <th>Duration</th>
+                                    <th>Type</th>
+                                    <th>Assigned Staff</th>
+                                    <th>Staff Hours</th>
+                                    <th style="width: 180px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Shifts will be dynamically added here -->
+                                <tr id="no-shifts-row">
+                                    <td colspan="7" class="text-center py-4">
+                                        <div class="d-flex flex-column align-items-center">
+                                            <div class="mb-3">
+                                                <i class="fas fa-clock fa-3x text-muted"></i>
+                                            </div>
+                                            <h5 class="text-muted">No shifts added yet</h5>
+                                            <p class="text-muted">Click "Add Shift" to create your first shift</p>
+                                            <button type="button" class="btn btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#shiftModal" onclick="resetShiftModal()">
+                                                <i class="fas fa-plus"></i> Add Shift
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="shiftDurationError" class="alert alert-danger mt-3" style="display:none;"></div>
+                </div>
+            </div>
+            <!-- Staff Distribution Report Section -->
+            <div id="section-staff-distribution" class="modern-card">
+                <div class="card-header" id="staff-distribution">
+                    <h4>Staff Distribution</h4>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm" id="crossTabTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Role</th>
+                                    <th>Male</th>
+                                    <th>Female</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="crossTabBody">
+                                <!-- Dynamically populated -->
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <th>Total</th>
+                                    <th id="totalMale">0</th>
+                                    <th id="totalFemale">0</th>
+                                    <th id="grandTotal">0</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <!-- Staff Assignment Matrix Section -->
+            <div id="section-staff-matrix" class="modern-card">
+                <div class="card-header d-flex justify-content-between align-items-center" id="staff-matrix">
+                    <h4>Staff Assignment Matrix</h4>
+                    <div>
+                        <button type="button" class="btn btn-outline-primary me-2" onclick="exportMatrixToPDF()">
+                            <i class="fas fa-file-pdf"></i> Export PDF
+                        </button>
+                        <button type="button" class="btn btn-outline-success" onclick="exportMatrixToExcel()">
+                            <i class="fas fa-file-excel"></i> Export Excel
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm" id="staffAssignmentMatrixTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Name & Surname</th>
+                                    <th>Gender</th>
+                                    <th>Age</th>
+                                    <th>Nationality</th>
+                                    <th>ID / Passport No.</th>
+                                    <th>Position</th>
+                                    <th>English (1-5)</th>
+                                    <th>Experience Rating (1-5)</th>
+                                    <th>HRS</th>
+                                </tr>
+                            </thead>
+                            <tbody id="staffAssignmentMatrixBody">
+                                <!-- Populated by JS -->
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <th colspan="8" class="text-end">Total HRS</th>
+                                    <th id="staffAssignmentMatrixTotalHrs">0</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <!-- Staff Assignment Summary Section -->
+            <div id="section-staff-summary" class="modern-card" style="margin-bottom: 20px; display: none;">
+                <div class="card-header">
+                    <h4>Staff Assignment Summary</h4>
+                </div>
+                <div class="card-body">
+                    <div id="staff-diff-warning" class="alert alert-warning" style="display:none;"></div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm mb-0" id="staffSummaryMatrix">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Role</th>
+                                    <th>Male</th>
+                                    <th>Female</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="staffSummaryMatrixBody">
+                                <!-- Populated by JS -->
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <th>Total</th>
+                                    <th id="matrix-total-male">0</th>
+                                    <th id="matrix-total-female">0</th>
+                                    <th id="matrix-grand-total">0</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <!-- Detailed Staff Assignment Table -->
+                    <div class="table-responsive mt-4">
+                        <table class="table table-bordered table-striped table-sm" id="staffAssignmentDetailsTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Name & Surname</th>
+                                    <th>Gender</th>
+                                    <th>Age</th>
+                                    <th>Nationality</th>
+                                    <th>ID / Passport No.</th>
+                                    <th>Position</th>
+                                    <th>English (1-5)</th>
+                                    <th>Experience Rating (1-5)</th>
+                                    <th>HRS work</th>
+                                </tr>
+                            </thead>
+                            <tbody id="staffAssignmentDetailsBody">
+                                <!-- Populated by JS -->
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <th colspan="8" class="text-end">Total
+                                        <span tabindex="0" data-bs-toggle="tooltip" data-bs-placement="top" title="This total sums the hours for each unique employee across all shifts. If an employee works multiple shifts, their hours are combined and shown once. The summary table above counts all hours assigned, including multiple shifts per employee.">
+                                            <i class="fas fa-info-circle text-info" style="cursor: pointer;"></i>
+                                        </span>
+                                    </th>
+                                    <th id="staffAssignmentTotalHrs">0</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Financial Information Section -->
+            <div id="section-financial" class="modern-card">
+                <div class="card-header" id="financial">
+                    <h4>Financial Information</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="EventPerHourcost">Cost Per Hour</label>
+                                <input type="number" step="0.01" class="form-control" id="EventPerHourcost" name="EventPerHourcost" 
+                                    value="{{ event.EventPerHourcost if event else '' }}" oninput="updateFinancialTotals()">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="EventPerHourselling">Selling Price Per Hour</label>
+                                <input type="number" step="0.01" class="form-control" id="EventPerHourselling" name="EventPerHourselling" 
+                                    value="{{ event.EventPerHourselling if event else '' }}" oninput="updateFinancialTotals()">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="totalhours">Total Hours</label>
+                                <input type="text" class="form-control" id="totalhours" name="totalhours" 
+                                    value="{{ event.totalhours|decimal_to_hhmm if event else '0:00' }}" readonly>
+                                <input type="hidden" id="totalhours_decimal" name="totalhours_decimal" 
+                                    value="{{ event.totalhours if event else '0.00' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="totalcost">Total Cost</label>
+                                <input type="number" step="0.01" class="form-control" id="totalcost" name="totalcost" 
+                                    value="{{ event.totalcost if event else '0.00' }}" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="totalselling">Total Selling Price</label>
+                                <input type="number" step="0.01" class="form-control" id="totalselling" name="totalselling" 
+                                    value="{{ event.totalselling if event else '0.00' }}" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Invoice Link (only in edit mode) -->
+                    {% if is_edit_mode and event %}
+                    <div class="row mt-3">
+                        <div class="col-md-12 text-end">
+                            <a href="{{ url_for('event_invoices', event_id=event.EventID) }}" class="btn btn-outline-success">
+                                <i class="fas fa-file-invoice me-1"></i> View/Manage Invoices
+                            </a>
+                            <a href="{{ url_for('new_invoice') }}?event_id={{ event.EventID }}" class="btn btn-outline-primary">
+                                <i class="fas fa-plus me-1"></i> Create New Invoice
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Notes Section -->
+            <div id="section-notes" class="modern-card">
+                <div class="card-header" id="notes">
+                    <h4>Notes</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label for="notes">Additional Notes</label>
+                                <textarea class="form-control" id="notes" name="notes" rows="4">{{ event.notes if event else '' }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Shift Modal -->
+<div class="modal fade" id="shiftModal" tabindex="-1" aria-labelledby="shiftModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="shiftModalLabel">Add Shift</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="shift-form">
+                    <input type="hidden" id="shift-id" value="">
+                    <div class="mb-3">
+                        <label for="shift-name" class="form-label">Shift Name</label>
+                        <input type="text" class="form-control" id="shift-name" required placeholder="Morning Shift">
+                    </div>
+                    <div class="mb-3">
+                        <label for="shift-type" class="form-label">Shift Type</label>
+                        <select class="form-control" id="shift-type" required>
+                            <option value="Full">Full - All staff work entire shift</option>
+                            <option value="Partial">Partial - Staff may work partial hours</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="shift-start" class="form-label">Start Time</label>
+                        <input type="datetime-local" class="form-control" id="shift-start" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="shift-end" class="form-label">End Time</label>
+                        <input type="datetime-local" class="form-control" id="shift-end" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="save-shift-btn">Save Shift</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Assign Employees Modal -->
+<div class="modal fade" id="assignEmployeesModal" tabindex="-1" aria-labelledby="assignEmployeesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl assign-employees-modal__dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="assignEmployeesModalLabel">Assign Employees to Shift</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <!-- Shift details card under the modal title -->
+            <div class="px-4 pt-3 pb-2">
+                <div class="card border-0 shadow-sm mb-3 assign-employees-modal__shift-details" style="background: #f1f5f9; border-radius: 12px;">
+                    <div class="card-body py-2 px-3 d-flex flex-wrap gap-4 align-items-center">
+                        <div><strong>Shift Name:</strong> <span id="shift-name-display"></span></div>
+                        <div><strong>Start:</strong> <span id="shift-start-display"></span></div>
+                        <div><strong>End:</strong> <span id="shift-end-display"></span></div>
+                        <div><strong>Duration:</strong> <span id="shift-duration-display"></span></div>
+                        <div><strong>Type:</strong> <span id="shift-type-display"></span></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-body assign-employees-modal__body">
+                <div class="mb-3 d-flex gap-2 align-items-center">
+                    <label class="mb-0">Filter:</label>
+                    <select id="assignFilterRole" class="form-select form-select-sm" style="width:auto;">
+                        <option value="">All Roles</option>
+                    </select>
+                    <select id="assignFilterGender" class="form-select form-select-sm" style="width:auto;">
+                        <option value="">All Genders</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                    </select>
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="assignAllByFilterBtn">Assign All</button>
+                </div>
+                <div class="mb-3 d-flex justify-content-between align-items-center assign-employees-modal__filter-container">
+                    <div class="d-flex align-items-center gap-2">
+                        <h6 class="mb-0">Assigned Employees</h6>
+                        <div class="btn-group ms-3">
+                            <button type="button" class="btn btn-sm btn-primary active" id="showAssignedBtn">Assigned</button>
+                        </div>
+                        <div class="mb-3 position-relative">
+                            <input type="text" id="addEmployeeInput" class="form-control" placeholder="Add employee to shift...">
+                            <div id="employeeSuggestions" class="list-group position-absolute w-100" style="z-index: 1055; display: none;"></div>
+                        </div>
+                    </div>
+                    <button type="button" id="selectAllEmployees" class="btn btn-sm btn-outline-primary">Select All</button>
+                </div>
+                <form id="assignEmployeesForm">
+                    <input type="hidden" id="assign-shift-id" value="">
+                    <input type="hidden" id="assign-shift-type" value="">
+                    <div class="table-responsive assign-employees-modal__table-responsive">
+                        <table class="table table-striped table-bordered table-hover assign-employees-modal__table" id="employeesTable">
+                            <thead>
+                                <tr>
+                                    <th width="50px">Select</th>
+                                    <th>Employee Name</th>
+                                    <th>Role</th>
+                                    <th>Gender</th>
+                                    <th width="150px" id="hoursHeader">Hours</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr id="no-employees-row">
+                                    <td colspan="5" class="text-center">No employees available</td>
+                                </tr>
+                                <template id="employee-row-template">
+                                    <tr class="employee-row">
+                                        <td>
+                                            <div class="form-check">
+                                                <input class="form-check-input employee-checkbox" type="checkbox" value="">
+                                            </div>
+                                        </td>
+                                        <td class="employee-name"></td>
+                                        <td class="employee-role"></td>
+                                        <td class="employee-gender"></td>
+                                        <td class="hours-cell">
+                                            <input type="text" class="form-control form-control-sm employee-hours" 
+                                                pattern="^\\d{1,2}:[0-5][0-9]$" placeholder="hh:mm" value="">
+                                            <div class="hours-error text-danger" style="display: none;"></div>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="save-assignments-btn">Save Assignments</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for employees by role -->
+<div class="modal fade" id="roleEmployeesModal" tabindex="-1" aria-labelledby="roleEmployeesModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="roleEmployeesModalLabel">Employees with Role</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="roleEmployeesList">
+        <!-- Employee list will be injected here -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="addShiftModal" tabindex="-1" aria-labelledby="addShiftModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addShiftModalLabel">Add New Shift</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addShiftForm">
+                    <input type="hidden" id="EventID" name="EventID" value="{{ event.EventID }}">
+                    <div class="mb-3">
+                        <label for="shiftName" class="form-label">Shift Name</label>
+                        <input type="text" class="form-control" id="shiftName" name="shiftName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="shiftType" class="form-label">Shift Type</label>
+                        <select class="form-control" id="shiftType" name="shiftType" required>
+                            <option value="Full">Full Shift</option>
+                            <option value="Partial">Partial Shift</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="shiftStart" class="form-label">Start Time</label>
+                        <input type="datetime-local" class="form-control" id="shiftStart" name="shiftStart" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="shiftEnd" class="form-label">End Time</label>
+                        <input type="datetime-local" class="form-control" id="shiftEnd" name="shiftEnd" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveShiftBtn">Save Shift</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Jinja2 injects data below -->
+<script id="shifts-data" type="application/json">{{ shifts|tojson|safe }}</script>
+<script id="employees-data" type="application/json">{{ employees|tojson|safe }}</script>
+<!-- End Jinja2 injection -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+<script>
+// Parse injected JSON data
+window.shifts = JSON.parse(document.getElementById('shifts-data').textContent);
+window.employees = JSON.parse(document.getElementById('employees-data').textContent);
+// Global variable for event ID
+let eventId;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Get and store the event ID globally
+    eventId = document.querySelector('input[name="event_id"]')?.value || '';
+    console.log('Event ID:', eventId);
+    
+    // Log shifts for debugging
+    console.log('Loading shifts:', window.shifts);
+    
+    // Set up the form
+    setupFormEvents();
+    
+    // Initialize Bootstrap tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    // Update financial totals on page load
+    updateFinancialTotals();
+    console.log('Updated financial totals on page load');
+
+    // Add event listeners for staff requirements
+    const waitersInput = document.getElementById('WaitersNeeded');
+    const bartendersInput = document.getElementById('BartendersNeeded');
+    const totalEmployeesInput = document.getElementById('TotalEmployees');
+
+    function updateTotalEmployees() {
+        const waiters = parseInt(waitersInput.value) || 0;
+        const bartenders = parseInt(bartendersInput.value) || 0;
+        const male = parseInt(document.getElementById('MaleEmployees').value) || 0;
+        const female = parseInt(document.getElementById('FemaleEmployees').value) || 0;
+        const total = waiters + bartenders;
+        totalEmployeesInput.value = total;
+
+        // Validate gender distribution
+        const genderTotal = male + female;
+        let errorMessage = '';
+        
+        if (genderTotal !== total) {
+            errorMessage = `Warning: Total gender distribution (${genderTotal}) does not match total employees (${total}). `;
+            if (genderTotal > total) {
+                errorMessage += `You have specified more gender requirements than total employees.`;
+            } else {
+                errorMessage += `You have specified fewer gender requirements than total employees.`;
+            }
+        }
+
+        // Show/hide error message
+        let errorDiv = document.getElementById('staffRequirementsError');
+        if (!errorDiv) {
+            errorDiv = document.createElement('div');
+            errorDiv.id = 'staffRequirementsError';
+            errorDiv.className = 'alert alert-warning mt-2';
+            totalEmployeesInput.parentNode.appendChild(errorDiv);
+        }
+
+        if (errorMessage) {
+            errorDiv.textContent = errorMessage;
+            errorDiv.style.display = '';
+        } else {
+            errorDiv.style.display = 'none';
+        }
+    }
+
+    // Add event listeners for all staff requirement inputs
+    document.getElementById('MaleEmployees').addEventListener('input', updateTotalEmployees);
+    document.getElementById('FemaleEmployees').addEventListener('input', updateTotalEmployees);
+
+    // Update validateTotalShiftDuration function to show a more prominent warning
+    function validateTotalShiftDuration() {
+        const eventStartInput = document.getElementById('EventStart');
+        const eventEndInput = document.getElementById('EventEnd');
+        const errorElem = document.getElementById('shiftDurationError');
+        
+        if (!eventStartInput || !eventEndInput || !errorElem) return;
+        
+        if (!eventStartInput.value || !eventEndInput.value) {
+            errorElem.innerHTML = `
+                <div class="alert alert-warning mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Please set both Event Start and End Date & Time.
+                </div>`;
+            errorElem.style.display = '';
+            return;
+        }
+
+        const eventStart = new Date(eventStartInput.value);
+        const eventEnd = new Date(eventEndInput.value);
+        const eventDuration = (eventEnd - eventStart) / (1000 * 60 * 60); // in hours
+        
+        let totalShiftDuration = 0;
+        let shiftDetails = [];
+        
+        (window.shifts || []).forEach(shift => {
+            if (shift.shiftstart && shift.shiftend) {
+                const s = new Date(shift.shiftstart);
+                const e = new Date(shift.shiftend);
+                const shiftHours = (e - s) / (1000 * 60 * 60);
+                totalShiftDuration += shiftHours;
+                shiftDetails.push({
+                    name: shift.shiftname || 'Unnamed Shift',
+                    start: s.toLocaleTimeString(),
+                    end: e.toLocaleTimeString(),
+                    duration: formatHoursMinutes(shiftHours)
+                });
+            }
+        });
+
+        const EPSILON = 0.01;
+        if (Math.abs(totalShiftDuration - eventDuration) > EPSILON) {
+            let message = `
+                <div class="alert alert-warning mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Shift Duration Mismatch:</strong><br>
+                    Event Duration: ${formatHoursMinutes(eventDuration)}<br>
+                    Total Shift Duration: ${formatHoursMinutes(totalShiftDuration)}<br><br>
+                    <strong>Current Shifts:</strong><br>
+                    <ul class="mb-0 mt-2">
+                        ${shiftDetails.map(shift => `
+                            <li>${shift.name}: ${shift.start} - ${shift.end} (${shift.duration})</li>
+                        `).join('')}
+                    </ul>
+                </div>`;
+            errorElem.innerHTML = message;
+            errorElem.style.display = '';
+        } else {
+            errorElem.innerHTML = '';
+            errorElem.style.display = 'none';
+        }
+    }
+
+    // Initial calculations
+    updateTotalEmployees();
+    validateTotalShiftDuration();
+
+    const form = document.getElementById('event-form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const start = new Date(document.getElementById('EventStart').value);
+            const end = new Date(document.getElementById('EventEnd').value);
+            if (end <= start) {
+                e.preventDefault();
+                alert('End Date & Time must be after Start Date & Time.');
+                document.getElementById('EventEnd').focus();
+            }
+        });
+    }
+
+    const startInput = document.getElementById('EventStart');
+    const endInput = document.getElementById('EventEnd');
+    if (startInput && endInput) {
+        function validateEndTime() {
+            const start = new Date(startInput.value);
+            const end = new Date(endInput.value);
+            let errorElem = document.getElementById('endTimeError');
+            if (!errorElem) {
+                errorElem = document.createElement('div');
+                errorElem.id = 'endTimeError';
+                errorElem.className = 'text-danger mt-1';
+                endInput.parentNode.appendChild(errorElem);
+            }
+            if (endInput.value && startInput.value && end <= start) {
+                errorElem.textContent = 'End Date & Time must be after Start Date & Time.';
+                endInput.classList.add('is-invalid');
+            } else {
+                errorElem.textContent = '';
+                endInput.classList.remove('is-invalid');
+            }
+        }
+        startInput.addEventListener('change', validateEndTime);
+        endInput.addEventListener('change', validateEndTime);
+        endInput.addEventListener('blur', validateEndTime);
+    }
+
+    const shiftStartInput = document.getElementById('shift-start');
+    const shiftEndInput = document.getElementById('shift-end');
+    if (shiftStartInput && shiftEndInput) {
+        shiftStartInput.addEventListener('change', validateShiftTimes);
+        shiftEndInput.addEventListener('change', validateShiftTimes);
+        shiftStartInput.addEventListener('blur', validateShiftTimes);
+        shiftEndInput.addEventListener('blur', validateShiftTimes);
+    }
+});
+
+// Set up form event handlers
+function setupFormEvents() {
+    // Initialize shifts data
+    if (window.shifts && window.shifts.length > 0) {
+        renderShifts();
+        renderStaffAssignmentMatrix();
+    }
+}
+
+// Helper function to calculate shift duration
+function calculateShiftDuration(shift) {
+    if (!shift.start || !shift.end) return null;
+    const start = new Date(shift.start);
+    const end = new Date(shift.end);
+    return ((end - start) / (1000 * 60 * 60)).toFixed(2);
+}
+
+// Helper function to calculate total assigned hours
+function calculateTotalAssignedHours(shift) {
+    if (!shift.employees || !shift.employees.length) return '0.00';
+    return shift.employees.reduce((total, emp) => total + (parseFloat(emp.hours) || 0), 0).toFixed(2);
+}
+
+// Update the shiftsTable structure to match our expected columns
+function renderShifts() {
+    // Get shifts table body
+    const tbody = document.querySelector('#shiftsTable tbody');
+    if (!tbody) {
+        return;
+    }
+    
+    // Clear existing rows (except template rows)
+    tbody.innerHTML = '';
+    
+    // Add the no-shifts-row back (it was removed when we cleared the tbody)
+    const noShiftsRow = document.createElement('tr');
+    noShiftsRow.id = 'no-shifts-row';
+    noShiftsRow.innerHTML = `
+        <td colspan="7" class="text-center py-4">
+            <div class="d-flex flex-column align-items-center">
+                <div class="mb-3">
+                    <i class="fas fa-clock fa-3x text-muted"></i>
+                </div>
+                <h5 class="text-muted">No shifts added yet</h5>
+                <p class="text-muted">Click "Add Shift" to create your first shift</p>
+                <button type="button" class="btn btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#shiftModal" onclick="resetShiftModal()">
+                    <i class="fas fa-plus"></i> Add Shift
+                </button>
+            </div>
+        </td>
+    `;
+    tbody.appendChild(noShiftsRow);
+    
+    if (!window.shifts || window.shifts.length === 0) {
+        // Show the no-shifts-row we just added
+        noShiftsRow.style.display = '';
+        // Clear staff distribution and matrix
+        updateCrossTabReport();
+        renderStaffAssignmentMatrix();
+        return;
+    }
+    
+    // Hide the no-shifts-row
+    noShiftsRow.style.display = 'none';
+    
+    // Add each shift as a row
+    window.shifts.forEach((shift, index) => {
+        console.log('Processing shift:', shift);
+        console.log('Shift employees:', shift.employees);
+        
+        const row = document.createElement('tr');
+        
+        // Format employee names with roles, one per line
+        let employeeNames = 'None';
+        if (shift.assigned_employee_ids && shift.assigned_employee_ids.length > 0) {
+            const assignedEmployees = window.employees.filter(emp => 
+                shift.assigned_employee_ids.includes(emp.employeeid.toString())
+            );
+            employeeNames = assignedEmployees.map(e => 
+                `<div class="mb-1">${e.employeename} <span class="text-muted">(${e.employeerolename || 'Unknown'})</span></div>`
+            ).join('');
+        }
+        
+        // Calculate shift hours
+        let hours = 0;
+        let hoursFormatted = '0 min';
+        let startFormatted = 'Invalid Date';
+        let endFormatted = 'Invalid Date';
+        
+        if (shift.shiftstart && shift.shiftend) {
+            const start = new Date(shift.shiftstart);
+            const end = new Date(shift.shiftend);
+            
+            if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+                hours = ((end - start) / (1000 * 60 * 60));
+                hoursFormatted = formatHoursMinutes(hours);
+                startFormatted = start.toLocaleString('en-US', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                });
+                endFormatted = end.toLocaleString('en-US', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                });
+            }
+        }
+        
+        // Calculate staff hours (sum of all assigned employee hours)
+        let staffHours = 0;
+        if (shift.assigned_employee_ids && shift.assigned_employee_ids.length > 0) {
+            // Parse the employees JSON string into an array
+            const employeesArray = JSON.parse(shift.employees || '[]');
+            console.log('Parsed employees array:', employeesArray);
+            
+            // Sum up the hours from all assigned employees
+            staffHours = employeesArray.reduce((total, emp) => {
+                console.log('Employee hours:', emp.hours);
+                return total + (parseFloat(emp.hours) || 0);
+            }, 0);
+            console.log('Total staff hours:', staffHours);
+        }
+        const staffHoursFormatted = formatHoursMinutes(staffHours);
+        
+        row.innerHTML = `
+            <td>${startFormatted}</td>
+            <td>${endFormatted}</td>
+            <td>${hoursFormatted}</td>
+            <td>${shift.shifttype || 'Full'}</td>
+            <td class="assigned-staff-cell">${employeeNames}</td>
+            <td>${staffHoursFormatted}</td>
+            <td>
+                <div class="action-buttons">
+                    <button type="button" 
+                            class="btn action-btn edit-btn" 
+                            onclick="editShift(${shift.shiftid})"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="top"
+                            title="Edit Shift">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button type="button" 
+                            class="btn action-btn delete-btn" 
+                            onclick="deleteShift(${shift.shiftid})"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="top"
+                            title="Delete Shift">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    <button type="button" 
+                            class="btn action-btn staff-btn" 
+                            onclick="manageShiftStaff(${shift.shiftid})"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="top"
+                            title="Manage Staff">
+                        <i class="fas fa-users"></i>
+                    </button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+    
+    // Add event listeners for action buttons
+    document.querySelectorAll('.assign-shift').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const shiftId = this.getAttribute('data-shift-id');
+            assignEmployeesToShift(shiftId);
+        });
+    });
+    
+    document.querySelectorAll('.edit-shift').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const shiftId = this.getAttribute('data-shift-id');
+            editShift(shiftId);
+        });
+    });
+    
+    document.querySelectorAll('.delete-shift').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const shiftId = this.getAttribute('data-shift-id');
+            deleteShift(shiftId);
+        });
+    });
+    
+    // Update other related tables and reports
+    updateCrossTabReport();
+    renderStaffAssignmentMatrix();
+    validateStaffAssignments();
+    validateTotalShiftDuration();
+}
+
+// Update the updateCrossTabReport function
+function updateCrossTabReport() {
+    const tbody = document.getElementById('crossTabBody');
+    if (!tbody) return;
+
+    // Get all assigned employee IDs from all shifts
+    const assignedIds = new Set();
+    const employeeShiftCount = new Map(); // Track how many shifts each employee is assigned to
+    const multiShiftEmployees = new Set(); // Track employees assigned to multiple shifts
+
+    // First pass: count how many times each employee is assigned
+    (window.shifts || []).forEach(shift => {
+        if (shift.assigned_employee_ids) {
+            shift.assigned_employee_ids.forEach(id => {
+                assignedIds.add(id);
+                // Count how many shifts this employee is assigned to
+                const count = employeeShiftCount.get(id) || 0;
+                employeeShiftCount.set(id, count + 1);
+                if (count + 1 > 1) {
+                    multiShiftEmployees.add(id);
+                }
+            });
+        }
+    });
+
+    // Group employees by role, counting them multiple times if assigned to multiple shifts
+    const roleGroups = {};
+    let totalMale = 0, totalFemale = 0, grandTotal = 0;
+
+    window.employees.forEach(emp => {
+        if (!assignedIds.has(emp.employeeid.toString())) return;
+        
+        const role = emp.employeerolename || 'Unknown';
+        if (!roleGroups[role]) {
+            roleGroups[role] = { male: 0, female: 0 };
+        }
+        
+        // Count the employee as many times as they are assigned to shifts
+        const shiftCount = employeeShiftCount.get(emp.employeeid.toString()) || 1;
+        
+        if (emp.gender === 'Male') {
+            roleGroups[role].male += shiftCount;
+            totalMale += shiftCount;
+        } else if (emp.gender === 'Female') {
+            roleGroups[role].female += shiftCount;
+            totalFemale += shiftCount;
+        }
+        grandTotal += shiftCount;
+    });
+
+    tbody.innerHTML = '';
+    Object.entries(roleGroups).forEach(([role, group]) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${role}</td>
+            <td><a href="#" class="show-role-employees" data-role="${role}" data-gender="Male">${group.male}</a></td>
+            <td><a href="#" class="show-role-employees" data-role="${role}" data-gender="Female">${group.female}</a></td>
+            <td>${group.male + group.female}</td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    document.getElementById('totalMale').textContent = totalMale;
+    document.getElementById('totalFemale').textContent = totalFemale;
+    document.getElementById('grandTotal').textContent = grandTotal;
+
+    // Add click listeners for the links
+    setTimeout(function() {
+        document.querySelectorAll('.show-role-employees').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const role = this.getAttribute('data-role');
+                const gender = this.getAttribute('data-gender');
+                showRoleEmployeesModal(role, gender);
+            });
+        });
+    }, 0);
+
+    // Add notification for employees assigned to multiple shifts
+    const staffDistributionSection = document.getElementById('section-staff-distribution');
+    let notificationDiv = document.getElementById('multi-shift-notification');
+    
+    if (multiShiftEmployees.size > 0) {
+        if (!notificationDiv) {
+            notificationDiv = document.createElement('div');
+            notificationDiv.id = 'multi-shift-notification';
+            notificationDiv.className = 'alert alert-warning mt-3';
+            staffDistributionSection.querySelector('.card-body').insertBefore(notificationDiv, staffDistributionSection.querySelector('.table-responsive'));
+        }
+
+        const multiShiftEmployeeNames = Array.from(multiShiftEmployees).map(id => {
+            const emp = window.employees.find(e => e.employeeid.toString() === id.toString());
+            const shiftCount = employeeShiftCount.get(id) || 1;
+            return emp ? `${emp.employeename} (${shiftCount} shifts)` : 'Unknown';
+        });
+
+        notificationDiv.innerHTML = `
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>Note:</strong> The following employees are assigned to multiple shifts and are counted accordingly in the totals:
+            <ul class="mb-0 mt-2">
+                ${multiShiftEmployeeNames.map(name => `<li>${name}</li>`).join('')}
+            </ul>
+        `;
+        notificationDiv.style.display = '';
+    } else if (notificationDiv) {
+        notificationDiv.style.display = 'none';
+    }
+}
+
+// Update the renderStaffAssignmentMatrix function
+function renderStaffAssignmentMatrix() {
+    const tbody = document.getElementById('staffAssignmentMatrixBody');
+    const totalCell = document.getElementById('staffAssignmentMatrixTotalHrs');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+    let totalMinutes = 0;
+
+    // Debug log to check employee data structure
+    console.log('Employee data structure:', window.employees[0]);
+
+    (window.shifts || []).forEach(shift => {
+        // Header row for the shift
+        const shiftHeader = document.createElement('tr');
+        shiftHeader.className = 'table-primary';
+        shiftHeader.innerHTML = `<td colspan="9"><strong>Shift: ${shift.shiftname || ''} (${shift.shiftstart ? new Date(shift.shiftstart).toLocaleString() : ''} - ${shift.shiftend ? new Date(shift.shiftend).toLocaleString() : ''})</strong></td>`;
+        tbody.appendChild(shiftHeader);
+
+        // Parse the employees JSON string into an array
+        const employees = JSON.parse(shift.employees || '[]');
+
+        // List employees assigned to this shift
+        if (employees && employees.length > 0) {
+            employees.forEach(empAssign => {
+                const emp = window.employees.find(e => e.employeeid === empAssign.employeeid);
+                if (!emp) return;
+
+                // Debug log for each employee
+                console.log('Employee details:', emp);
+
+                // Get all possible field variations
+                const age = emp.age || emp.employeeage || '';
+                const nationality = emp.nationality || emp.employeenationality || '';
+                const idPassport = emp.passportid || emp.idnumber || emp.id_number || emp.passportno || emp.passport_number || emp.employeeidnumber || '';
+                const english = emp.employeeenglishrating || emp.englishrating || emp.english_rating || emp.english || emp['English (1-5) rating'] || emp.englishrating || '';
+                const experience = emp.employeeExperienceRating || emp.experiencerating || emp.experience_rating || emp.experience || emp['Experience Rating (1-5)'] || emp.experiencerating || '';
+                const hours = parseFloat(empAssign.hours) || 0;
+                totalMinutes += Math.round(hours * 60);
+                const hhmm = hours ? decimalToHHMM(hours) : '';
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${emp.employeename || ''}</td>
+                    <td>${emp.gender || ''}</td>
+                    <td>${age}</td>
+                    <td>${nationality}</td>
+                    <td>${idPassport}</td>
+                    <td>${emp.employeerolename || ''}</td>
+                    <td>${english}</td>
+                    <td>${experience}</td>
+                    <td>${hhmm}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+    });
+
+    if (totalCell) {
+        const h = Math.floor(totalMinutes / 60);
+        const m = totalMinutes % 60;
+        totalCell.textContent = `${h > 0 ? h + ' hr' + (h > 1 ? 's' : '') : ''}${h > 0 && m > 0 ? ' ' : ''}${m > 0 ? m + ' min' : ''}` || '0 min';
+    }
+}
+
+function assignEmployeesToShift(shiftId) {
+    const shift = window.shifts.find(s => s.id == shiftId);
+    if (!shift) {
+        return;
+    }
+    // Set shift details in the modal
+    document.getElementById('shift-name-display').textContent = shift.name;
+    document.getElementById('shift-start-display').textContent = new Date(shift.start).toLocaleString();
+    document.getElementById('shift-end-display').textContent = new Date(shift.end).toLocaleString();
+    // Calculate shift duration in hours and as hh:mm
+    const shiftStart = new Date(shift.start);
+    const shiftEnd = new Date(shift.end);
+    const shiftDurationHours = (shiftEnd - shiftStart) / (1000 * 60 * 60);
+    const shiftDurationHHMM = formatHoursMinutes(shiftDurationHours);
+    document.getElementById('shift-duration-display').textContent = shiftDurationHHMM;
+    document.getElementById('shift-type-display').textContent = shift.type;
+    document.getElementById('assign-shift-id').value = shiftId;
+    document.getElementById('assign-shift-type').value = shift.type;
+    const tbody = document.querySelector('#employeesTable tbody');
+    tbody.innerHTML = '';
+    // Add or get the total row
+    let totalRow = document.getElementById('assignEmployeesTotalRow');
+    if (!totalRow) {
+        totalRow = document.createElement('tr');
+        totalRow.id = 'assignEmployeesTotalRow';
+        totalRow.innerHTML = `
+            <td colspan="4" class="text-end fw-bold">Total Assigned Hours</td>
+            <td id="assignEmployeesTotalCell" class="fw-bold"></td>
+        `;
+        tbody.parentNode.appendChild(document.createElement('tfoot')).appendChild(totalRow);
+    }
+    function updateTotalAssignedHours() {
+        let totalMinutes = 0;
+        (shift.employees || []).forEach(emp => {
+            if (emp.hours) {
+                // emp.hours is decimal, convert to minutes
+                totalMinutes += Math.round((parseFloat(emp.hours) || 0) * 60);
+            }
+        });
+        const h = Math.floor(totalMinutes / 60);
+        const m = totalMinutes % 60;
+        document.getElementById('assignEmployeesTotalCell').textContent = `${h > 0 ? h + ' hr' + (h > 1 ? 's' : '') : ''}${h > 0 && m > 0 ? ' ' : ''}${m > 0 ? m + ' min' : ''}` || '0 min';
+    }
+    // Helper: get assigned employees (by id)
+    function getAssignedEmployeeIds() {
+        return shift.employees.map(e => e.employeeid);
+    }
+    // Render only assigned employees
+    function renderEmployees() {
+        // Defensive: ensure shift and shift.employees are always defined and an array
+        if (typeof shift === 'undefined' || !shift) return;
+        if (!Array.isArray(shift.employees)) shift.employees = [];
+        tbody.innerHTML = '';
+        if (!shift.employees.length) {
+            const noEmployeesRow = document.createElement('tr');
+            noEmployeesRow.innerHTML = `
+                <td colspan="5" class="text-center py-4">
+                    <div class="d-flex flex-column align-items-center">
+                        <div class="mb-3">
+                            <i class="fas fa-users fa-3x text-muted"></i>
+                        </div>
+                        <h5 class="text-muted">No employees assigned</h5>
+                        <p class="text-muted">Use the input above to add employees</p>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(noEmployeesRow);
+            updateTotalAssignedHours();
+            return;
+        }
+        shift.employees.forEach(employee => {
+            // Find full employee data
+            const emp = window.employees.find(e => e.employeeid == employee.employeeid) || employee;
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>
+                    <div class="form-check">
+                        <input class="form-check-input employee-checkbox" type="checkbox" value="${emp.employeeid}" checked>
+                    </div>
+                </td>
+                <td class="employee-name">${emp.employeename}</td>
+                <td class="employee-role">${emp.employeerolename || 'Unknown'}</td>
+                <td class="employee-gender">${emp.gender || 'Unknown'}</td>
+                <td class="hours-cell">
+                    <input type="text" class="form-control form-control-sm employee-hours" 
+                        pattern="^\\d{1,2}:[0-5][0-9]$" placeholder="hh:mm" value="${employee.hours ? decimalToHHMM(employee.hours) : ''}">
+                    <div class="hours-error text-danger" style="display: none;"></div>
+                </td>
+            `;
+            // Remove employee if unchecked
+            row.querySelector('.employee-checkbox').addEventListener('change', function() {
+                if (!this.checked) {
+                    shift.employees = shift.employees.filter(e => e.employeeid != emp.employeeid);
+                    renderEmployees();
+                }
+            });
+            // Update hours with validation
+            const hoursInput = row.querySelector('.employee-hours');
+            const hoursError = row.querySelector('.hours-error');
+            hoursInput.addEventListener('input', function() {
+                // Validate hh:mm format
+                const val = this.value.trim();
+                const valid = /^\d{1,2}:[0-5][0-9]$/.test(val);
+                if (!valid && val !== '') {
+                    hoursError.textContent = 'Please enter time as hh:mm (e.g., 2:30)';
+                    hoursError.style.display = '';
+                    this.classList.add('is-invalid');
+                } else {
+                    hoursError.textContent = '';
+                    hoursError.style.display = 'none';
+                    this.classList.remove('is-invalid');
+                    // Convert to decimal for backend
+                    employee.hours = val ? hhmmToDecimal(val) : '';
+                    updateTotalAssignedHours();
+                }
+            });
+            tbody.appendChild(row);
+        });
+        updateTotalAssignedHours();
+        // Populate role filter
+        const roleFilter = document.getElementById('assignFilterRole');
+        if (roleFilter && roleFilter.options.length === 1) {
+            // Only add roles if not already populated
+            const roles = Array.from(new Set(window.employees.map(e => e.employeerolename || 'Unknown')));
+            roles.forEach(role => {
+                const opt = document.createElement('option');
+                opt.value = role;
+                opt.textContent = role;
+                roleFilter.appendChild(opt);
+            });
+        }
+    }
+    // Autocomplete logic
+    const addInput = document.getElementById('addEmployeeInput');
+    const suggestions = document.getElementById('employeeSuggestions');
+    addInput.value = '';
+    suggestions.innerHTML = '';
+    suggestions.style.display = 'none';
+    addInput.oninput = function() {
+        const val = this.value.trim().toLowerCase();
+        if (!val) {
+            suggestions.innerHTML = '';
+            suggestions.style.display = 'none';
+            return;
+        }
+        const assignedIds = getAssignedEmployeeIds();
+        const matches = window.employees.filter(e =>
+            !assignedIds.includes(e.employeeid) &&
+            (e.employeename.toLowerCase().includes(val) || (e.employeerolename||'').toLowerCase().includes(val))
+        );
+        if (!matches.length) {
+            suggestions.innerHTML = '<div class="list-group-item disabled">No matches</div>';
+            suggestions.style.display = 'block';
+            return;
+        }
+        suggestions.innerHTML = matches.map(e =>
+            `<button type="button" class="list-group-item list-group-item-action" data-empid="${e.employeeid}">${e.employeename} <small class='text-muted'>(${e.employeerolename||''})</small></button>`
+        ).join('');
+        suggestions.style.display = 'block';
+        // Add click listeners
+        Array.from(suggestions.querySelectorAll('button')).forEach(btn => {
+            btn.onclick = function() {
+                const empid = this.getAttribute('data-empid');
+                const emp = window.employees.find(e => e.employeeid == empid);
+                if (emp) {
+                    shift.employees.push({ employeeid: emp.employeeid, hours: '' });
+                    renderEmployees();
+                }
+                addInput.value = '';
+                suggestions.innerHTML = '';
+                suggestions.style.display = 'none';
+            };
+        });
+    };
+    // Hide suggestions on blur (with slight delay for click)
+    addInput.onblur = function() { setTimeout(() => { suggestions.style.display = 'none'; }, 200); };
+    // Initial render
+    renderEmployees();
+    // Show the modal
+    const modal = new bootstrap.Modal(document.getElementById('assignEmployeesModal'));
+    modal.show();
+    // Assign All by filter logic
+    const assignAllBtn = document.getElementById('assignAllByFilterBtn');
+    if (assignAllBtn) {
+        assignAllBtn.onclick = function() {
+            const roleVal = document.getElementById('assignFilterRole').value;
+            const genderVal = document.getElementById('assignFilterGender').value;
+            document.querySelectorAll('#employeesTable tbody tr').forEach(row => {
+                const role = row.querySelector('.employee-role')?.textContent;
+                const gender = row.querySelector('.employee-gender')?.textContent;
+                const checkbox = row.querySelector('.employee-checkbox');
+                const hoursInput = row.querySelector('.employee-hours');
+                let match = true;
+                if (roleVal && role !== roleVal) match = false;
+                if (genderVal && gender !== genderVal) match = false;
+                if (match) {
+                    checkbox.checked = true;
+                    hoursInput.disabled = false;
+                }
+            });
+        };
+    }
+}
+
+function editShift(shiftId) {
+    // Open the shift edit page in a new tab
+    window.open(`/shifts/${shiftId}/edit`, '_blank');
+}
+
+function deleteShift(shiftId) {
+    if (!confirm('Are you sure you want to delete this shift?')) {
+        return;
+    }
+    
+    fetch(`/shifts/${shiftId}/delete`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to delete shift');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Store the section to scroll to in sessionStorage
+            sessionStorage.setItem('scrollToSection', 'section-shifts');
+            
+            // Force reload the page to ensure all data is in sync
+            window.location.reload();
+        } else {
+            throw new Error(data.error || 'Failed to delete shift');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert(error.message);
+    });
+}
+
+function resetShiftModal() {
+    document.getElementById('shift-id').value = '';
+    document.getElementById('shift-name').value = '';
+    document.getElementById('shift-type').value = 'Full';
+    document.getElementById('shift-start').value = '';
+    document.getElementById('shift-end').value = '';
+}
+
+// Add event listener for the save assignments button
+const saveAssignmentsBtn = document.getElementById('save-assignments-btn');
+if (saveAssignmentsBtn) {
+    saveAssignmentsBtn.addEventListener('click', function() {
+        const shiftId = document.getElementById('assign-shift-id').value;
+        const shift = window.shifts.find(s => s.shiftid == shiftId);
+        if (!shift) return;
+        
+        // Validate all hours before saving
+        let hasErrors = false;
+        document.querySelectorAll('.employee-hours').forEach(input => {
+            const row = input.closest('tr');
+            const checkbox = row.querySelector('.employee-checkbox');
+            // Only validate hours for checked employees
+            if (checkbox.checked) {
+                const val = input.value.trim();
+                const valid = /^\d{1,2}:[0-5][0-9]$/.test(val);
+                if (!valid && val !== '') {
+                    hasErrors = true;
+                    input.classList.add('is-invalid');
+                    const errorDiv = row.querySelector('.hours-error');
+                    if (errorDiv) {
+                        errorDiv.textContent = 'Please enter time as hh:mm (e.g., 2:30)';
+                        errorDiv.style.display = '';
+                    }
+                }
+            }
+        });
+
+        if (hasErrors) {
+            alert('Please correct the hours errors before saving.');
+            return;
+        }
+
+        // Gather selected employees and convert hours to decimal
+        const selectedEmployees = Array.from(document.querySelectorAll('.employee-checkbox:checked')).map(checkbox => {
+            const row = checkbox.closest('tr');
+            const hoursInput = row.querySelector('.employee-hours');
+            let hoursVal = hoursInput.value.trim();
+            // Convert hh:mm to decimal if needed
+            if (/^\d{1,2}:[0-5][0-9]$/.test(hoursVal)) {
+                hoursVal = hhmmToDecimal(hoursVal);
+            } else {
+                hoursVal = parseFloat(hoursVal) || 0;
+            }
+            return {
+                employeeid: parseInt(checkbox.value),
+                hours: hoursVal
+            };
+        });
+
+        // Update the shift's employees array
+        shift.employees = JSON.stringify(selectedEmployees);
+
+        // Send the update to the server
+        fetch(`/events/${eventId}/shifts/${shiftId}/assign`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
+            },
+            body: JSON.stringify({ employees: selectedEmployees })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Close the modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('assignEmployeesModal'));
+                modal.hide();
+                
+                // Update the shifts table and related displays
+                renderShifts();
+                updateCrossTabReport();
+                renderStaffAssignmentMatrix();
+                validateStaffAssignments();
+                validateTotalShiftDuration();
+                
+                // Redirect to edit event page
+                window.location.href = `/events/${eventId}/edit`;
+            } else {
+                alert(data.error || 'Error updating staff assignments');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error updating staff assignments');
+        });
+    });
+}
+
+// Add event listener for the select all button
+const selectAllBtn = document.getElementById('selectAllEmployees');
+if (selectAllBtn) {
+    selectAllBtn.addEventListener('click', function() {
+        const checkboxes = document.querySelectorAll('.employee-checkbox');
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = !allChecked;
+            const hoursInput = checkbox.closest('tr').querySelector('.employee-hours');
+            hoursInput.disabled = allChecked;
+            if (allChecked) {
+                hoursInput.value = '';
+            }
+        });
+    });
+}
+
+// Add event listener for employee search
+const employeeSearchInput = document.getElementById('employeeSearchInput');
+if (employeeSearchInput) {
+    employeeSearchInput.addEventListener('input', function(e) {
+        const searchTerm = e.target.value.toLowerCase();
+        const rows = document.querySelectorAll('#employeesTable tbody tr');
+        rows.forEach(row => {
+            const name = row.querySelector('.employee-name')?.textContent.toLowerCase() || '';
+            const role = row.querySelector('.employee-role')?.textContent.toLowerCase() || '';
+            const matches = name.includes(searchTerm) || role.includes(searchTerm);
+            row.style.display = matches ? '' : 'none';
+        });
+    });
+}
+
+// Add event listener for the save shift button
+const saveShiftBtn = document.getElementById('save-shift-btn');
+if (saveShiftBtn) {
+    saveShiftBtn.addEventListener('click', function() {
+        const shiftId = document.getElementById('shift-id').value;
+        const shiftName = document.getElementById('shift-name').value;
+        const shiftType = document.getElementById('shift-type').value;
+        const shiftStart = document.getElementById('shift-start').value;
+        const shiftEnd = document.getElementById('shift-end').value;
+        const eventId = document.querySelector('input[name="event_id"]').value;
+
+        if (!shiftName) {
+            alert('Please enter a shift name');
+            document.getElementById('shift-name').focus();
+            return;
+        }
+        if (!shiftStart) {
+            alert('Please select a start time');
+            document.getElementById('shift-start').focus();
+            return;
+        }
+        if (!shiftEnd) {
+            alert('Please select an end time');
+            document.getElementById('shift-end').focus();
+            return;
+        }
+        if (!eventId) {
+            alert('Event ID is missing. Cannot save shift.');
+            return;
+        }
+
+        const shiftData = {
+            shiftid: shiftId,
+            shiftname: shiftName,
+            shifttype: shiftType,
+            shiftstart: shiftStart,
+            shiftend: shiftEnd,
+            eventid: eventId
+        };
+
+        if (!validateShiftTimes()) {
+            return;
+        }
+
+        const url = shiftId ? `/shifts/${shiftId}/edit` : `/shifts/create`;
+        const method = 'POST';
+
+        fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
+            },
+            body: JSON.stringify(shiftData)
+        })
+        .then(async response => {
+            if (!response.ok) {
+                throw new Error('Failed to save shift');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // Close the modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('shiftModal'));
+                modal.hide();
+                
+                // Store the section to scroll to in sessionStorage
+                sessionStorage.setItem('scrollToSection', 'section-shifts');
+                
+                // Force reload the page to ensure all data is in sync
+                window.location.reload();
+            } else {
+                throw new Error(data.error || 'Failed to save shift');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert(error.message);
+        });
+    });
+}
+
+// Add the fetchAndSetTotalHours function
+function fetchAndSetTotalHours(eventId) {
+    if (!eventId) {
+        return;
+    }
+
+    // Calculate total hours from shifts
+    let totalHours = 0;
+    if (window.shifts && window.shifts.length > 0) {
+        totalHours = window.shifts.reduce((total, shift) => {
+            const start = new Date(shift.start);
+            const end = new Date(shift.end);
+            const hours = (end - start) / (1000 * 60 * 60);
+            return total + hours;
+        }, 0);
+    }
+
+    // Update financial calculations
+    updateFinancialTotals();
+}
+
+// Add the updateFinancialTotals function if it doesn't exist
+function updateFinancialTotals() {
+    console.log('Starting updateFinancialTotals');
+    console.log('Current shifts:', window.shifts);
+    
+    // Calculate total hours from shifts
+    let totalMinutes = 0;
+    if (window.shifts && window.shifts.length > 0) {
+        window.shifts.forEach(shift => {
+            console.log('Processing shift:', shift);
+            // Parse the employees JSON string into an array
+            const employees = JSON.parse(shift.employees || '[]');
+            // Sum up the hours from each employee in the shift
+            if (employees && employees.length > 0) {
+                employees.forEach(emp => {
+                    const hours = parseFloat(emp.hours) || 0;
+                    console.log('Employee hours:', emp, hours);
+                    totalMinutes += Math.round(hours * 60);
+                });
+            }
+        });
+    }
+    
+    console.log('Total calculated minutes:', totalMinutes);
+    
+    // Convert total minutes to hours (decimal)
+    const totalHours = totalMinutes / 60;
+    console.log('Total calculated hours:', totalHours);
+
+    // Format total hours as hh:mm
+    const h = Math.floor(totalHours);
+    const m = Math.round((totalHours - h) * 60);
+    const formattedHours = `${h}:${m.toString().padStart(2, '0')}`;
+    console.log('Formatted hours:', formattedHours);
+
+    // Update both the visible and hidden fields
+    const totalHoursInput = document.getElementById('totalhours');
+    const totalHoursDecimalInput = document.getElementById('totalhours_decimal');
+    
+    if (totalHoursInput) {
+        totalHoursInput.value = formattedHours;
+        console.log('Set total hours input value to:', formattedHours);
+    } else {
+        console.error('Total hours input element not found');
+    }
+    
+    if (totalHoursDecimalInput) {
+        totalHoursDecimalInput.value = totalHours.toFixed(2);
+        console.log('Set decimal hours value to:', totalHours.toFixed(2));
+    }
+    
+    const costPerHour = parseFloat(document.getElementById('EventPerHourcost')?.value) || 0;
+    const sellingPerHour = parseFloat(document.getElementById('EventPerHourselling')?.value) || 0;
+    console.log('Cost per hour:', costPerHour, 'Selling per hour:', sellingPerHour);
+
+    // Round to 2 decimal places for consistency with server-side calculations
+    const totalCost = Math.round(totalHours * costPerHour * 100) / 100;
+    const totalSelling = Math.round(totalHours * sellingPerHour * 100) / 100;
+    // Simple difference with rounding to match the server-side calculation
+    const totalProfit = Math.round((totalSelling - totalCost) * 100) / 100;
+    console.log('Calculated financials - Cost:', totalCost, 'Selling:', totalSelling, 'Profit:', totalProfit);
+
+    // Update all financial fields
+    if (document.getElementById('totalcost')) document.getElementById('totalcost').value = totalCost.toFixed(2);
+    if (document.getElementById('totalselling')) document.getElementById('totalselling').value = totalSelling.toFixed(2);
+    if (document.getElementById('totalprofit')) document.getElementById('totalprofit').value = totalProfit.toFixed(2);
+
+    // Update profit color based on value
+    const profitElement = document.getElementById('totalprofit');
+    if (profitElement) {
+        if (totalProfit > 0) {
+            profitElement.classList.remove('text-danger');
+            profitElement.classList.add('text-success');
+        } else {
+            profitElement.classList.remove('text-success');
+            profitElement.classList.add('text-danger');
+        }
+    }
+
+    // Only update database if we have an event ID and the form is being submitted
+    if (eventId && document.getElementById('event-form')?.dataset.submitting === 'true') {
+        fetch(`/events/${eventId}/update_financials`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
+            },
+            body: JSON.stringify({
+                totalhours: totalHours.toFixed(2),
+                totalcost: totalCost.toFixed(2),
+                totalselling: totalSelling.toFixed(2),
+                totalprofit: totalProfit.toFixed(2)
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (!data.success) {
+                console.error('Error updating financials:', data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error updating financials:', error);
+        });
+    }
+    
+    console.log('Finished updateFinancialTotals');
+}
+
+// Add event listeners for financial input changes
+document.getElementById('EventPerHourcost').addEventListener('input', updateFinancialTotals);
+document.getElementById('EventPerHourselling').addEventListener('input', updateFinancialTotals);
+document.getElementById('totalhours').addEventListener('input', updateFinancialTotals);
+
+function showRoleEmployeesModal(role, gender) {
+    // Get all assigned employee IDs from all shifts
+    const assignedIds = new Set();
+    const employeeShifts = new Map(); // Track which shifts each employee is assigned to
+
+    // First pass: collect all shift assignments
+    (window.shifts || []).forEach(shift => {
+        if (shift.assigned_employee_ids) {
+            shift.assigned_employee_ids.forEach(id => {
+                assignedIds.add(id);
+                if (!employeeShifts.has(id)) {
+                    employeeShifts.set(id, []);
+                }
+                employeeShifts.get(id).push(shift);
+            });
+        }
+    });
+
+    // Filter employees by role and gender
+    const employees = window.employees.filter(emp =>
+        assignedIds.has(emp.employeeid.toString()) &&
+        (emp.employeerolename || 'Unknown') === role &&
+        emp.gender === gender
+    );
+
+    // Build the list with shift information
+    let html = '';
+    if (employees.length === 0) {
+        html = '<div class="text-muted">No employees found.</div>';
+    } else {
+        html = '<ul class="list-group">' + employees.map(emp => {
+            const shifts = employeeShifts.get(emp.employeeid.toString()) || [];
+            const shiftDetails = shifts.map(shift => {
+                const start = new Date(shift.shiftstart).toLocaleString();
+                const end = new Date(shift.shiftend).toLocaleString();
+                return `${shift.shiftname || 'Unnamed Shift'} (${start} - ${end})`;
+            }).join('<br>');
+            
+            return `
+                <li class="list-group-item">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <strong>${emp.employeename}</strong>
+                            <div class="text-muted small">
+                                Age: ${emp.age || 'N/A'}, 
+                                Nationality: ${emp.nationality || 'N/A'}, 
+                                Position: ${emp.employeerolename || 'N/A'}
+                            </div>
+                        </div>
+                        <span class="badge bg-primary rounded-pill">${shifts.length} shift${shifts.length > 1 ? 's' : ''}</span>
+                    </div>
+                    ${shifts.length > 0 ? `
+                        <div class="mt-2 small">
+                            <strong>Assigned Shifts:</strong><br>
+                            ${shiftDetails}
+                        </div>
+                    ` : ''}
+                </li>`;
+        }).join('') + '</ul>';
+    }
+
+    // Update modal title to be more descriptive
+    const modalTitle = document.getElementById('roleEmployeesModalLabel');
+    if (modalTitle) {
+        modalTitle.textContent = `${role} - ${gender} Employees`;
+    }
+
+    document.getElementById('roleEmployeesList').innerHTML = html;
+    const modal = new bootstrap.Modal(document.getElementById('roleEmployeesModal'));
+    modal.show();
+}
+
+// Update the modal styles to better display the information
+const style = document.createElement('style');
+style.textContent = `
+    .roleEmployeesModal .modal-dialog {
+        max-width: 600px;
+    }
+    .roleEmployeesModal .list-group-item {
+        padding: 1rem;
+    }
+    .roleEmployeesModal .badge {
+        font-size: 0.9rem;
+    }
+    .roleEmployeesModal .text-muted {
+        font-size: 0.85rem;
+    }
+`;
+document.head.appendChild(style);
+
+// Add the modal class to the modal element
+document.getElementById('roleEmployeesModal').classList.add('roleEmployeesModal');
+
+// Add real-time validation for shift start/end within event start/end
+function validateShiftTimes() {
+    const eventStartInput = document.getElementById('EventStart');
+    const eventEndInput = document.getElementById('EventEnd');
+    const shiftStartInput = document.getElementById('shift-start');
+    const shiftEndInput = document.getElementById('shift-end');
+    if (!eventStartInput || !eventEndInput || !shiftStartInput || !shiftEndInput) return;
+
+    // Remove previous error messages
+    let startErrorElem = document.getElementById('shiftStartTimeError');
+    let endErrorElem = document.getElementById('shiftEndTimeError');
+    if (startErrorElem) startErrorElem.remove();
+    if (endErrorElem) endErrorElem.remove();
+    shiftStartInput.classList.remove('is-invalid');
+    shiftEndInput.classList.remove('is-invalid');
+
+    const eventStart = new Date(eventStartInput.value);
+    const eventEnd = new Date(eventEndInput.value);
+    const shiftStart = new Date(shiftStartInput.value);
+    const shiftEnd = new Date(shiftEndInput.value);
+
+    let valid = true;
+
+    // Validate shift start
+    if (shiftStartInput.value) {
+        if (shiftStart < eventStart) {
+            startErrorElem = document.createElement('div');
+            startErrorElem.id = 'shiftStartTimeError';
+            startErrorElem.className = 'text-danger mt-1';
+            startErrorElem.textContent = 'Shift start time cannot be before event start time.';
+            shiftStartInput.parentNode.appendChild(startErrorElem);
+            shiftStartInput.classList.add('is-invalid');
+            valid = false;
+        } else if (shiftStart > eventEnd) {
+            startErrorElem = document.createElement('div');
+            startErrorElem.id = 'shiftStartTimeError';
+            startErrorElem.className = 'text-danger mt-1';
+            startErrorElem.textContent = 'Shift start time cannot be after event end time.';
+            shiftStartInput.parentNode.appendChild(startErrorElem);
+            shiftStartInput.classList.add('is-invalid');
+            valid = false;
+        }
+    }
+
+    // Validate shift end
+    if (shiftEndInput.value) {
+        if (shiftEnd < eventStart) {
+            endErrorElem = document.createElement('div');
+            endErrorElem.id = 'shiftEndTimeError';
+            endErrorElem.className = 'text-danger mt-1';
+            endErrorElem.textContent = 'Shift end time cannot be before event start time.';
+            shiftEndInput.parentNode.appendChild(endErrorElem);
+            shiftEndInput.classList.add('is-invalid');
+            valid = false;
+        } else if (shiftEnd > eventEnd) {
+            endErrorElem = document.createElement('div');
+            endErrorElem.id = 'shiftEndTimeError';
+            endErrorElem.className = 'text-danger mt-1';
+            endErrorElem.textContent = 'Shift end time cannot be after event end time.';
+            shiftEndInput.parentNode.appendChild(endErrorElem);
+            shiftEndInput.classList.add('is-invalid');
+            valid = false;
+        }
+    }
+
+    // Validate shift end after shift start
+    if (shiftStartInput.value && shiftEndInput.value && shiftEnd <= shiftStart) {
+        endErrorElem = document.createElement('div');
+        endErrorElem.id = 'shiftEndTimeError';
+        endErrorElem.className = 'text-danger mt-1';
+        endErrorElem.textContent = 'Shift end time must be after shift start time.';
+        shiftEndInput.parentNode.appendChild(endErrorElem);
+        shiftEndInput.classList.add('is-invalid');
+        valid = false;
+    }
+    return valid;
+}
+
+function validateStaffAssignments() {
+    // Get requested numbers
+    const requested = {
+        Waiter: parseInt(document.getElementById('WaitersNeeded')?.value) || 0,
+        Bartender: parseInt(document.getElementById('BartendersNeeded')?.value) || 0,
+        Male: parseInt(document.getElementById('MaleEmployees')?.value) || 0,
+        Female: parseInt(document.getElementById('FemaleEmployees')?.value) || 0
+    };
+
+    // Calculate total requested employees
+    const totalRequested = requested.Waiter + requested.Bartender;
+    const totalGenderRequested = requested.Male + requested.Female;
+
+    // Count assigned employees by role and gender (unique employees per role)
+    const assigned = {
+        Waiter: 0,
+        Bartender: 0,
+        Male: 0,
+        Female: 0
+    };
+
+    // Track unique employees to avoid double counting
+    const assignedEmployeeIds = new Set();
+
+    // Process all shifts and their employees
+    (window.shifts || []).forEach(shift => {
+        // Parse the employees JSON string into an array
+        const employees = JSON.parse(shift.employees || '[]');
+        employees.forEach(empAssign => {
+            const emp = window.employees.find(e => e.employeeid == empAssign.employeeid);
+            if (!emp) return;
+
+            // Only count each employee once per role
+            if (!assignedEmployeeIds.has(emp.employeeid)) {
+                // Count by role
+                const role = (emp.employeerolename || '').toLowerCase();
+                if (role.includes('waiter')) assigned.Waiter++;
+                if (role.includes('bartender')) assigned.Bartender++;
+
+                // Count by gender
+                if ((emp.gender || '').toLowerCase() === 'male') assigned.Male++;
+                if ((emp.gender || '').toLowerCase() === 'female') assigned.Female++;
+
+                assignedEmployeeIds.add(emp.employeeid);
+            }
+        });
+    });
+
+    // Build error messages
+    let errors = [];
+
+    // First check if total gender distribution matches total employees
+    if (totalGenderRequested !== totalRequested) {
+        errors.push(`Warning: Total gender distribution (${totalGenderRequested}) does not match total employees (${totalRequested}). ` +
+            (totalGenderRequested > totalRequested ? 
+                'You have specified more gender requirements than total employees.' : 
+                'You have specified fewer gender requirements than total employees.'));
+    }
+
+    // Then check role requirements
+    if (requested.Waiter > 0 && assigned.Waiter !== requested.Waiter) {
+        const diff = assigned.Waiter - requested.Waiter;
+        errors.push(`Assigned Waiters: ${assigned.Waiter}, Requested: ${requested.Waiter} (${Math.abs(diff)} ${diff > 0 ? 'too many' : 'more needed'})`);
+    }
+
+    if (requested.Bartender > 0 && assigned.Bartender !== requested.Bartender) {
+        const diff = assigned.Bartender - requested.Bartender;
+        errors.push(`Assigned Bartenders: ${assigned.Bartender}, Requested: ${requested.Bartender} (${Math.abs(diff)} ${diff > 0 ? 'too many' : 'more needed'})`);
+    }
+
+    // Finally check gender requirements
+    if (requested.Male > 0 && assigned.Male !== requested.Male) {
+        const diff = assigned.Male - requested.Male;
+        errors.push(`Assigned Male Employees: ${assigned.Male}, Requested: ${requested.Male} (${Math.abs(diff)} ${diff > 0 ? 'too many' : 'more needed'})`);
+    }
+
+    if (requested.Female > 0 && assigned.Female !== requested.Female) {
+        const diff = assigned.Female - requested.Female;
+        errors.push(`Assigned Female Employees: ${assigned.Female}, Requested: ${requested.Female} (${Math.abs(diff)} ${diff > 0 ? 'too many' : 'more needed'})`);
+    }
+
+    // Show or hide error message
+    let errorElem = document.getElementById('staffAssignmentError');
+    if (!errorElem) {
+        errorElem = document.createElement('div');
+        errorElem.id = 'staffAssignmentError';
+        errorElem.className = 'alert alert-warning mt-2';
+        const staffSection = document.getElementById('section-staff');
+        staffSection.appendChild(errorElem);
+    }
+
+    if (errors.length > 0) {
+        errorElem.innerHTML = errors.map(e => `<div>${e}</div>`).join('');
+        errorElem.style.display = '';
+    } else {
+        errorElem.innerHTML = '';
+        errorElem.style.display = 'none';
+    }
+}
+
+// Add event listeners for all staff requirement inputs
+document.getElementById('WaitersNeeded').addEventListener('input', validateStaffAssignments);
+document.getElementById('BartendersNeeded').addEventListener('input', validateStaffAssignments);
+document.getElementById('MaleEmployees').addEventListener('input', validateStaffAssignments);
+document.getElementById('FemaleEmployees').addEventListener('input', validateStaffAssignments);
+
+function validateEmployeeHours(shift, employeeId, hours) {
+    const shiftStart = new Date(shift.start);
+    const shiftEnd = new Date(shift.end);
+    const shiftDuration = (shiftEnd - shiftStart) / (1000 * 60 * 60); // Convert to hours
+    const hoursNum = parseFloat(hours) || 0;
+    const EPSILON = 0.01;
+    
+    if (hoursNum - shiftDuration > EPSILON) {
+        return {
+            valid: false,
+            message: `Hours (${hoursNum}) cannot exceed shift duration (${shiftDuration.toFixed(2)} hours)`
+        };
+    }
+    return { valid: true };
+}
+
+// Helper to format hours as hh:mm
+function formatHoursMinutes(hours) {
+    const totalMinutes = Math.round(hours * 60);
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+    let result = '';
+    if (h > 0) result += `${h} hr${h > 1 ? 's' : ''}`;
+    if (h > 0 && m > 0) result += ' ';
+    if (m > 0) result += `${m} min`;
+    if (result === '') result = '0 min';
+    return result;
+}
+
+function validateTotalShiftDuration() {
+    const eventStartInput = document.getElementById('EventStart');
+    const eventEndInput = document.getElementById('EventEnd');
+    const errorElem = document.getElementById('shiftDurationError');
+    
+    if (!eventStartInput || !eventEndInput || !errorElem) return;
+    
+    if (!eventStartInput.value || !eventEndInput.value) {
+        errorElem.innerHTML = `
+            <div class="alert alert-warning mb-0">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Please set both Event Start and End Date & Time.
+            </div>`;
+        errorElem.style.display = '';
+        return;
+    }
+
+    const eventStart = new Date(eventStartInput.value);
+    const eventEnd = new Date(eventEndInput.value);
+    const eventDuration = (eventEnd - eventStart) / (1000 * 60 * 60); // in hours
+    
+    let totalShiftDuration = 0;
+    let shiftDetails = [];
+    
+    (window.shifts || []).forEach(shift => {
+        if (shift.shiftstart && shift.shiftend) {
+            const s = new Date(shift.shiftstart);
+            const e = new Date(shift.shiftend);
+            const shiftHours = (e - s) / (1000 * 60 * 60);
+            totalShiftDuration += shiftHours;
+            shiftDetails.push({
+                name: shift.shiftname || 'Unnamed Shift',
+                start: s.toLocaleTimeString(),
+                end: e.toLocaleTimeString(),
+                duration: formatHoursMinutes(shiftHours)
+            });
+        }
+    });
+
+    const EPSILON = 0.01;
+    if (Math.abs(totalShiftDuration - eventDuration) > EPSILON) {
+        let message = `
+            <div class="alert alert-warning mb-0">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Shift Duration Mismatch:</strong><br>
+                Event Duration: ${formatHoursMinutes(eventDuration)}<br>
+                Total Shift Duration: ${formatHoursMinutes(totalShiftDuration)}<br><br>
+                <strong>Current Shifts:</strong><br>
+                <ul class="mb-0 mt-2">
+                    ${shiftDetails.map(shift => `
+                        <li>${shift.name}: ${shift.start} - ${shift.end} (${shift.duration})</li>
+                    `).join('')}
+                </ul>
+            </div>`;
+        errorElem.innerHTML = message;
+        errorElem.style.display = '';
+    } else {
+        errorElem.innerHTML = '';
+        errorElem.style.display = 'none';
+    }
+}
+// MutationObserver to keep the warning visible if mismatch exists
+(function() {
+    const errorElem = document.getElementById('shiftDurationError');
+    if (!errorElem) return;
+    const observer = new MutationObserver(() => {
+        if (errorElem.textContent && errorElem.style.display === 'none') {
+            errorElem.style.display = '';
+            errorElem.style.visibility = 'visible';
+            errorElem.classList.remove('d-none', 'fade', 'alert-dismissible');
+        }
+    });
+    observer.observe(errorElem, { attributes: true, attributeFilter: ['style', 'class'] });
+})();
+// Call this function whenever shifts or event times change
+['EventStart', 'EventEnd'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('change', validateTotalShiftDuration);
+});
+// Also call after rendering shifts
+const originalRenderShifts = renderShifts;
+renderShifts = function() {
+    originalRenderShifts.apply(this, arguments);
+    validateTotalShiftDuration();
+};
+
+// ... existing code ...
+function updateEventDurationHours() {
+    const startInput = document.getElementById('EventStart');
+    const endInput = document.getElementById('EventEnd');
+    const durationInput = document.getElementById('EventDurationHours');
+    if (!startInput || !endInput || !durationInput) return;
+    if (!startInput.value || !endInput.value) {
+        durationInput.value = '';
+        return;
+    }
+    const start = new Date(startInput.value);
+    const end = new Date(endInput.value);
+    const durationMs = end - start;
+    if (durationMs <= 0) {
+        durationInput.value = '';
+        return;
+    }
+    const totalMinutes = Math.round(durationMs / (1000 * 60));
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+    durationInput.value = `${h}:${m.toString().padStart(2, '0')}`;
+}
+['EventStart', 'EventEnd'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('change', updateEventDurationHours);
+});
+updateEventDurationHours();
+// ... existing code ...
+
+// Helper to convert decimal hours to hh:mm
+function decimalToHHMM(decimal) {
+    const h = Math.floor(decimal);
+    const m = Math.round((decimal - h) * 60);
+    return `${h}:${m.toString().padStart(2, '0')}`;
+}
+// Helper to convert hh:mm to decimal hours
+function hhmmToDecimal(hhmm) {
+    const [h, m] = hhmm.split(':').map(Number);
+    return h + m / 60;
+}
+
+function updateTotalHours(hours) {
+    // Convert decimal hours to HH:MM format for display
+    const wholeHours = Math.floor(hours);
+    const minutes = Math.round((hours - wholeHours) * 60);
+    const formattedTime = `${String(wholeHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+    
+    // Update both display and hidden fields
+    document.getElementById('totalhours').value = formattedTime;
+    document.getElementById('totalhours_decimal').value = hours.toFixed(2);
+}
+
+function updateShiftHours(hours) {
+    // Convert decimal hours to HH:MM format for display
+    const wholeHours = Math.floor(hours);
+    const minutes = Math.round((hours - wholeHours) * 60);
+    const formattedTime = `${String(wholeHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+    
+    // Update both display and hidden fields
+    document.getElementById('totalshifthours').value = formattedTime;
+    document.getElementById('totalshifthours_decimal').value = hours.toFixed(2);
+}
+
+window.addEventListener('load', function() {
+    const navLinks = document.querySelectorAll('.form-sidebar .nav-item[data-section]');
+    
+    navLinks.forEach(function(link) {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const targetId = this.dataset.section;
+            if (!targetId) return;
+            const targetSection = document.querySelector(targetId);
+            if (!targetSection) return;
+
+            // Update active state
+            navLinks.forEach(function(navItem) { 
+                navItem.classList.remove('active');
+            });
+            this.classList.add('active');
+
+            // Scroll to section with offset for fixed header
+            targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            setTimeout(function() {
+                window.scrollBy(0, -100); // Adjust -100 to your header height
+            }, 300);
+        });
+    });
+    
+    // Action buttons (save, cancel)
+    const actionButtons = document.querySelectorAll('.form-sidebar .nav-item[data-action]');
+    actionButtons.forEach(function(button) {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const action = this.dataset.action;
+            if (action === 'save-form') {
+                document.getElementById('event-form').submit();
+            } else if (action === 'cancel-form') {
+                if (confirm('Are you sure you want to cancel? Changes will be lost.')) {
+                    window.location.href = '{{ url_for("event_list") }}';
+                }
+            }
+        });
+    });
+    
+    // Check if we need to scroll to a specific section
+    const scrollToSection = sessionStorage.getItem('scrollToSection');
+    if (scrollToSection) {
+        const section = document.getElementById(scrollToSection);
+        if (section) {
+            // Clear the stored section
+            sessionStorage.removeItem('scrollToSection');
+            
+            // Scroll to the section with offset for fixed header
+            setTimeout(() => {
+                section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                window.scrollBy(0, -100); // Adjust -100 to your header height
+            }, 100);
+        }
+    }
+});
+
+// ... existing code ...
+function manageShiftStaff(shiftId) {
+    const eventId = document.querySelector('input[name="event_id"]').value;
+    if (!eventId) {
+        alert('Error: Event ID is missing');
+        return;
+    }
+    window.location.href = `/shifts/${shiftId}/assign/${eventId}`;
+}
+// ... existing code ...
+
+// ... existing code ...
+function createShift() {
+    const eventId = document.getElementById('eventId').value;
+    const shiftName = document.getElementById('shiftName').value;
+    const shiftType = document.getElementById('shiftType').value;
+    const shiftStart = document.getElementById('shiftStart').value;
+    const shiftEnd = document.getElementById('shiftEnd').value;
+
+    if (!eventId) {
+        alert('Event ID is missing');
+        return;
+    }
+
+    const shiftData = {
+        eventid: eventId,
+        shiftname: shiftName,
+        shifttype: shiftType,
+        shiftstart: shiftStart,
+        shiftend: shiftEnd
+    };
+
+    fetch('/shifts/create', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(shiftData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(data => {
+                throw new Error(data.error || 'Failed to create shift');
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Clear the form
+            document.getElementById('shiftName').value = '';
+            document.getElementById('shiftType').value = 'Full';
+            document.getElementById('shiftStart').value = '';
+            document.getElementById('shiftEnd').value = '';
+            
+            // Close the modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addShiftModal'));
+            modal.hide();
+            
+            // Store the section to scroll to in sessionStorage
+            sessionStorage.setItem('scrollToSection', 'section-shifts');
+            
+            // Force reload the page to ensure all data is in sync
+            window.location.reload();
+        } else {
+            throw new Error(data.error || 'Failed to create shift');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert(error.message);
+    });
+}
+// ... existing code ...
+
+// Initialize tooltips
+const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl, {
+        trigger: 'hover'
+    });
+});
+
+function exportShiftsToPDF() {
+    // Create new jsPDF instance
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    // Get event details
+    const eventName = document.getElementById('EventName').value;
+    const eventStart = document.getElementById('EventStart').value;
+    const eventEnd = document.getElementById('EventEnd').value;
+    
+    // Add title
+    doc.setFontSize(16);
+    doc.text('Shift Management Report', 14, 15);
+    
+    // Add event details
+    doc.setFontSize(12);
+    doc.text(`Event: ${eventName}`, 14, 25);
+    doc.text(`Period: ${new Date(eventStart).toLocaleString()} - ${new Date(eventEnd).toLocaleString()}`, 14, 32);
+    
+    // Prepare table data
+    const tableData = [];
+    const headers = ['Start Time', 'End Time', 'Duration', 'Type', 'Assigned Staff', 'Staff Hours'];
+    
+    // Get all shifts
+    (window.shifts || []).forEach(shift => {
+        const start = new Date(shift.shiftstart);
+        const end = new Date(shift.shiftend);
+        const duration = formatHoursMinutes((end - start) / (1000 * 60 * 60));
+        
+        // Format employee names
+        let employeeNames = 'None';
+        if (shift.assigned_employee_ids && shift.assigned_employee_ids.length > 0) {
+            const assignedEmployees = window.employees.filter(emp => 
+                shift.assigned_employee_ids.includes(emp.employeeid.toString())
+            );
+            employeeNames = assignedEmployees.map(e => 
+                `${e.employeename} (${e.employeerolename || 'Unknown'})`
+            ).join(', ');
+        }
+        
+        // Calculate staff hours
+        let staffHours = 0;
+        if (shift.employees) {
+            const employees = JSON.parse(shift.employees || '[]');
+            staffHours = employees.reduce((total, emp) => total + (parseFloat(emp.hours) || 0), 0);
+        }
+        
+        tableData.push([
+            start.toLocaleString(),
+            end.toLocaleString(),
+            duration,
+            shift.shifttype || 'Full',
+            employeeNames,
+            formatHoursMinutes(staffHours)
+        ]);
+    });
+    
+    // Add the table
+    doc.autoTable({
+        head: [headers],
+        body: tableData,
+        startY: 40,
+        theme: 'grid',
+        styles: {
+            fontSize: 10,
+            cellPadding: 3
+        },
+        headStyles: {
+            fillColor: [41, 128, 185],
+            textColor: 255,
+            fontStyle: 'bold'
+        },
+        columnStyles: {
+            0: { cellWidth: 40 },
+            1: { cellWidth: 40 },
+            2: { cellWidth: 25 },
+            3: { cellWidth: 20 },
+            4: { cellWidth: 50 },
+            5: { cellWidth: 25 }
+        }
+    });
+    
+    // Add footer with date
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.text(
+            `Generated on ${new Date().toLocaleString()}`,
+            doc.internal.pageSize.width / 2,
+            doc.internal.pageSize.height - 10,
+            { align: 'center' }
+        );
+    }
+    
+    // Save the PDF
+    doc.save(`shift-management-${eventName}-${new Date().toISOString().split('T')[0]}.pdf`);
+}
+
+function exportShiftsToExcel() {
+    // Get event details
+    const eventName = document.getElementById('EventName').value;
+    const eventStart = document.getElementById('EventStart').value;
+    const eventEnd = document.getElementById('EventEnd').value;
+    
+    // Prepare worksheet data
+    const wsData = [
+        ['Shift Management Report'],
+        [`Event: ${eventName}`],
+        [`Period: ${new Date(eventStart).toLocaleString()} - ${new Date(eventEnd).toLocaleString()}`],
+        [], // Empty row for spacing
+        ['Start Time', 'End Time', 'Duration', 'Type', 'Assigned Staff', 'Staff Hours']
+    ];
+    
+    // Add shift data
+    (window.shifts || []).forEach(shift => {
+        const start = new Date(shift.shiftstart);
+        const end = new Date(shift.shiftend);
+        const duration = formatHoursMinutes((end - start) / (1000 * 60 * 60));
+        
+        // Format employee names
+        let employeeNames = 'None';
+        if (shift.assigned_employee_ids && shift.assigned_employee_ids.length > 0) {
+            const assignedEmployees = window.employees.filter(emp => 
+                shift.assigned_employee_ids.includes(emp.employeeid.toString())
+            );
+            employeeNames = assignedEmployees.map(e => 
+                `${e.employeename} (${e.employeerolename || 'Unknown'})`
+            ).join(', ');
+        }
+        
+        // Calculate staff hours
+        let staffHours = 0;
+        if (shift.employees) {
+            const employees = JSON.parse(shift.employees || '[]');
+            staffHours = employees.reduce((total, emp) => total + (parseFloat(emp.hours) || 0), 0);
+        }
+        
+        wsData.push([
+            start.toLocaleString(),
+            end.toLocaleString(),
+            duration,
+            shift.shifttype || 'Full',
+            employeeNames,
+            formatHoursMinutes(staffHours)
+        ]);
+    });
+    
+    // Create worksheet
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    
+    // Set column widths
+    const colWidths = [
+        { wch: 20 }, // Start Time
+        { wch: 20 }, // End Time
+        { wch: 15 }, // Duration
+        { wch: 10 }, // Type
+        { wch: 40 }, // Assigned Staff
+        { wch: 15 }  // Staff Hours
+    ];
+    ws['!cols'] = colWidths;
+    
+    // Create workbook and add worksheet
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Shift Management');
+    
+    // Save the file
+    XLSX.writeFile(wb, `shift-management-${eventName}-${new Date().toISOString().split('T')[0]}.xlsx`);
+}
+
+function exportMatrixToPDF() {
+    // Create new jsPDF instance
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    // Get event details
+    const eventName = document.getElementById('EventName').value;
+    const eventStart = document.getElementById('EventStart').value;
+    const eventEnd = document.getElementById('EventEnd').value;
+    
+    // Add title
+    doc.setFontSize(16);
+    doc.text('Staff Assignment Matrix Report', 14, 15);
+    
+    // Add event details
+    doc.setFontSize(12);
+    doc.text(`Event: ${eventName}`, 14, 25);
+    doc.text(`Period: ${new Date(eventStart).toLocaleString()} - ${new Date(eventEnd).toLocaleString()}`, 14, 32);
+    
+    // Prepare table data
+    const tableData = [];
+    const headers = ['Name & Surname', 'Gender', 'Age', 'Nationality', 'ID / Passport No.', 'Position', 'English (1-5)', 'Experience Rating (1-5)', 'HRS'];
+    
+    // Get all shifts and their employees
+    (window.shifts || []).forEach(shift => {
+        // Add shift header
+        tableData.push([{
+            content: `Shift: ${shift.shiftname || ''} (${new Date(shift.shiftstart).toLocaleString()} - ${new Date(shift.shiftend).toLocaleString()})`,
+            colSpan: 9,
+            styles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' }
+        }]);
+        
+        // Parse the employees JSON string into an array
+        const employees = JSON.parse(shift.employees || '[]');
+        
+        // Add employee data
+        employees.forEach(empAssign => {
+            const emp = window.employees.find(e => e.employeeid === empAssign.employeeid);
+            if (!emp) return;
+            
+            tableData.push([
+                emp.employeename || '',
+                emp.gender || '',
+                emp.age || '',
+                emp.nationality || '',
+                emp.passportid || emp.idnumber || '',
+                emp.employeerolename || '',
+                emp.employeeenglishrating || '',
+                emp.employeeExperienceRating || '',
+                formatHoursMinutes(parseFloat(empAssign.hours) || 0)
+            ]);
+        });
+        
+        // Add empty row between shifts
+        tableData.push(['', '', '', '', '', '', '', '', '']);
+    });
+    
+    // Add the table
+    doc.autoTable({
+        head: [headers],
+        body: tableData,
+        startY: 40,
+        theme: 'grid',
+        styles: {
+            fontSize: 9,
+            cellPadding: 2
+        },
+        headStyles: {
+            fillColor: [41, 128, 185],
+            textColor: 255,
+            fontStyle: 'bold'
+        },
+        columnStyles: {
+            0: { cellWidth: 30 },
+            1: { cellWidth: 15 },
+            2: { cellWidth: 10 },
+            3: { cellWidth: 20 },
+            4: { cellWidth: 25 },
+            5: { cellWidth: 20 },
+            6: { cellWidth: 20 },
+            7: { cellWidth: 25 },
+            8: { cellWidth: 15 }
+        }
+    });
+    
+    // Add footer with date
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.text(
+            `Generated on ${new Date().toLocaleString()}`,
+            doc.internal.pageSize.width / 2,
+            doc.internal.pageSize.height - 10,
+            { align: 'center' }
+        );
+    }
+    
+    // Save the PDF
+    doc.save(`staff-matrix-${eventName}-${new Date().toISOString().split('T')[0]}.pdf`);
+}
+
+function exportMatrixToExcel() {
+    // Get event details
+    const eventName = document.getElementById('EventName').value;
+    const eventStart = document.getElementById('EventStart').value;
+    const eventEnd = document.getElementById('EventEnd').value;
+    
+    // Prepare worksheet data
+    const wsData = [
+        ['Staff Assignment Matrix Report'],
+        [`Event: ${eventName}`],
+        [`Period: ${new Date(eventStart).toLocaleString()} - ${new Date(eventEnd).toLocaleString()}`],
+        [], // Empty row for spacing
+        ['Name & Surname', 'Gender', 'Age', 'Nationality', 'ID / Passport No.', 'Position', 'English (1-5)', 'Experience Rating (1-5)', 'HRS']
+    ];
+    
+    // Add data for each shift
+    (window.shifts || []).forEach(shift => {
+        // Add shift header
+        wsData.push([`Shift: ${shift.shiftname || ''} (${new Date(shift.shiftstart).toLocaleString()} - ${new Date(shift.shiftend).toLocaleString()})`]);
+        
+        // Parse the employees JSON string into an array
+        const employees = JSON.parse(shift.employees || '[]');
+        
+        // Add employee data
+        employees.forEach(empAssign => {
+            const emp = window.employees.find(e => e.employeeid === empAssign.employeeid);
+            if (!emp) return;
+            
+            wsData.push([
+                emp.employeename || '',
+                emp.gender || '',
+                emp.age || '',
+                emp.nationality || '',
+                emp.passportid || emp.idnumber || '',
+                emp.employeerolename || '',
+                emp.employeeenglishrating || '',
+                emp.employeeExperienceRating || '',
+                formatHoursMinutes(parseFloat(empAssign.hours) || 0)
+            ]);
+        });
+        
+        // Add empty row between shifts
+        wsData.push([]);
+    });
+    
+    // Create worksheet
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    
+    // Set column widths
+    const colWidths = [
+        { wch: 30 }, // Name & Surname
+        { wch: 15 }, // Gender
+        { wch: 10 }, // Age
+        { wch: 20 }, // Nationality
+        { wch: 25 }, // ID / Passport No.
+        { wch: 20 }, // Position
+        { wch: 20 }, // English
+        { wch: 25 }, // Experience
+        { wch: 15 }  // HRS
+    ];
+    ws['!cols'] = colWidths;
+    
+    // Create workbook and add worksheet
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Staff Matrix');
+    
+    // Save the file
+    XLSX.writeFile(wb, `staff-matrix-${eventName}-${new Date().toISOString().split('T')[0]}.xlsx`);
+}
+</script>
+{% endblock %}

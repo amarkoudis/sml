@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Event - SML System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Add datetime picker CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+</head>
+<body>
+    <div class="admin-container">
+        {% include 'navbar.html' %}
+        
+        <div class="content">
+            <div class="page-header">
+                <h1>Create New Event</h1>
+                <a href="{{ url_for('event_list') }}" class="btn btn-secondary">Back to Events</a>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" class="event-form">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Customer</label>
+                        <select name="customerid" required>
+                            <option value="">Select Customer</option>
+                            {% for customer in customers %}
+                            <option value="{{ customer.customerid }}">{{ customer.customername }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Event Name</label>
+                        <input type="text" name="event_name" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Location</label>
+                        <input type="text" name="location" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Start Time</label>
+                        <input type="text" name="start_time" class="datetime-picker" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>End Time</label>
+                        <input type="text" name="end_time" class="datetime-picker" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Waiters Needed</label>
+                        <input type="number" name="waiters" min="0" value="0" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Bartenders Needed</label>
+                        <input type="number" name="bartenders" min="0" value="0" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Male Employees</label>
+                        <input type="number" name="male_employees" min="0" value="0" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Female Employees</label>
+                        <input type="number" name="female_employees" min="0" value="0" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Cost Per Hour</label>
+                        <input type="number" name="per_hour_cost" step="0.01" min="0" value="0.00" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Selling Price Per Hour</label>
+                        <input type="number" name="per_hour_selling" step="0.01" min="0" value="0.00" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea name="notes" rows="4"></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Create Event</button>
+                    <a href="{{ url_for('event_list') }}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add datetime picker JS -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            flatpickr(".datetime-picker", {
+                enableTime: true,
+                dateFormat: "Y-m-d H:i",
+                time_24hr: true
+            });
+        });
+    </script>
+</body>
+</html> 

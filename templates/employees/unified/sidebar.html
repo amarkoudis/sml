@@ -1,0 +1,41 @@
+<div class="form-sidebar">
+    <div class="sidebar-header">
+        <h5 class="sidebar-title">{% if is_edit_mode %}Edit{% else %}Add{% endif %} Employee</h5>
+    </div>
+    <nav class="sidebar-nav">
+        <a href="#section-basic" class="nav-item active" data-section="section-basic">
+            <i class="fas fa-info-circle"></i>
+            <span class="nav-text">Basic Information</span>
+        </a>
+        <a href="#section-contact" class="nav-item" data-section="section-contact">
+            <i class="fas fa-address-card"></i>
+            <span class="nav-text">Contact Information</span>
+        </a>
+        <a href="#section-employment" class="nav-item" data-section="section-employment">
+            <i class="fas fa-briefcase"></i>
+            <span class="nav-text">Employment Details</span>
+        </a>
+        <a href="#section-financial" class="nav-item" data-section="section-financial">
+            <i class="fas fa-dollar-sign"></i>
+            <span class="nav-text">Financial Information</span>
+        </a>
+        <a href="#section-additional" class="nav-item" data-section="section-additional">
+            <i class="fas fa-clipboard-list"></i>
+            <span class="nav-text">Additional Information</span>
+        </a>
+        <a href="#section-documents" class="nav-item" data-section="section-documents">
+            <i class="fas fa-file-alt"></i>
+            <span class="nav-text">Documents</span>
+        </a>
+        <div class="mt-auto">
+            <a href="#" class="nav-item text-success" data-action="save-form">
+                <i class="fas fa-save"></i>
+                <span class="nav-text">Save Employee</span>
+            </a>
+            <a href="#" class="nav-item text-danger" data-action="cancel-form">
+                <i class="fas fa-times"></i>
+                <span class="nav-text">Cancel</span>
+            </a>
+        </div>
+    </nav>
+</div> 

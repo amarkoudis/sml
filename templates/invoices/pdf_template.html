@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Invoice {{ invoice.invoice_number }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1.5cm;
+            margin-bottom: 2cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 10pt;
+            line-height: 1.3;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+        .company-info {
+            width: 50%;
+        }
+        .date-section {
+            width: 30%;
+            text-align: right;
+        }
+        .company-logo {
+            font-size: 22pt;
+            font-weight: bold;
+            margin-bottom: 0.3rem;
+            display: flex;
+            align-items: center;
+        }
+        .company-logo img {
+            max-height: 60px;
+            max-width: 120px;
+            margin-right: 10px;
+        }
+        .company-logo span {
+            color: #888;
+            font-size: 9pt;
+            margin-left: 5px;
+        }
+        .company-address {
+            font-size: 9pt;
+            line-height: 1.2;
+        }
+        .clear {
+            clear: both;
+        }
+        .customer-section {
+            text-align: right;
+            margin-bottom: 1rem;
+        }
+        .event-details {
+            margin-bottom: 1rem;
+            float: left;
+            width: 50%;
+        }
+        .event-details h4 {
+            margin-bottom: 0.3rem;
+            margin-top: 0;
+            font-size: 11pt;
+        }
+        .event-details div {
+            margin-bottom: 0.2rem;
+            font-size: 9pt;
+        }
+        .invoice-title {
+            clear: both;
+            text-align: center;
+            background-color: #f0f8ff;
+            padding: 0.3rem;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+            font-size: 12pt;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1rem;
+        }
+        table th {
+            background-color: #000;
+            color: white;
+            text-align: left;
+            padding: 0.3rem;
+            font-size: 9pt;
+        }
+        table td {
+            padding: 0.3rem;
+            border-bottom: 1px solid #ddd;
+            font-size: 9pt;
+        }
+        .line-items-table tr {
+            height: 18px; /* Fixed height for table rows */
+        }
+        .totals-table {
+            width: 40%;
+            float: right;
+            margin-bottom: 1rem;
+        }
+        .totals-table td {
+            padding: 0.2rem;
+            text-align: right;
+            border: none;
+        }
+        .totals-table tr:last-child td {
+            border-top: 1px solid #ddd;
+            font-weight: bold;
+        }
+        .payment-info {
+            margin-top: 1.5rem;
+            font-size: 9pt;
+            clear: both;
+        }
+        .payment-info table {
+            width: 50%;
+            margin-bottom: 0;
+        }
+        .payment-info table td {
+            border: none;
+            padding: 0.12rem;
+            vertical-align: top;
+        }
+        .payment-info table td:first-child {
+            font-weight: bold;
+            width: 30%;
+        }
+        .footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            border-top: 1px solid #4f97fb;
+            height: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="company-info">
+            <div class="company-logo">
+                {% if company and company.company_logo %}
+                <img src="{{ url_for('static', filename='uploads/logos/' + company.company_logo) }}" alt="Company Logo">
+                {% else %}
+                SML <span>FIND FLEX WORK</span>
+                {% endif %}
+            </div>
+            <div class="company-address">
+                114 Antoni Loukaldi, Oasis Complex, Block E<br>
+                Limassol - Cyprus<br>
+                Tel: +357 25884000<br>
+                VAT: 60000138<br>
+                <a href="http://www.smlhospitality.com">www.smlhospitality.com</a>
+            </div>
+        </div>
+        <div class="date-section">
+            <div>DATE</div>
+            <div style="font-weight: bold;">{{ invoice.invoice_date.strftime('%d/%m/%Y') }}</div>
+            <br>
+            <div>FOR</div>
+            <div style="font-weight: bold;">{{ customer.customername|upper }}</div>
+        </div>
+    </div>
+
+    <div class="clear"></div>
+    
+    <div class="event-details">
+        <h4>Event Details</h4>
+        <div><strong>Venue / Client:</strong> {% if event %}{{ event.EventLocation }}{% else %}{{ customer.customername }}{% endif %}</div>
+        <div><strong>Invoice:</strong> {{ invoice.invoice_number }}</div>
+        <div><strong>Date:</strong> {% if event %}{{ event.EventStart.strftime('%d/%m/%Y') }}{% else %}{{ invoice.invoice_date.strftime('%d/%m/%Y') }}{% endif %}</div>
+        <div><strong>Total Hours:</strong> {% if event %}{{ event.totalhours|format_hours }}{% else %}{% set total_hours = 0 %}{% for item in invoice.items %}{% set total_hours = total_hours + item.quantity %}{% endfor %}{{ total_hours|format_hours }}{% endif %}</div>
+    </div>
+
+    <div class="clear"></div>
+    
+    <div class="invoice-title">
+        INVOICE FOR EVENT SERVICES
+    </div>
+    
+    <table class="line-items-table">
+        <thead>
+            <tr>
+                <th style="width: 5%;">ITEM</th>
+                <th style="width: 50%;">Description</th>
+                <th style="width: 10%;">Quantity</th>
+                <th style="width: 10%;">Rate Code</th>
+                <th style="width: 10%;">Event Hours</th>
+                <th style="width: 15%;">Total amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in invoice.items %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ item.description|upper }}</td>
+                <td>{{ item.quantity|format_hours }}</td>
+                <td>{{ "%.2f"|format(item.unit_price) }} €</td>
+                <td>{{ item.quantity|format_hours }}</td>
+                <td>{{ "%.2f"|format(item.total) }} €</td>
+            </tr>
+            {% endfor %}
+            
+            <!-- Add only enough empty rows to make a good layout, max 5 -->
+            {% set max_empty_rows = 5 %}
+            {% set empty_rows_needed = max_empty_rows - invoice.items|length %}
+            {% if empty_rows_needed > 0 %}
+                {% for _ in range(empty_rows_needed) %}
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                {% endfor %}
+            {% endif %}
+        </tbody>
+    </table>
+    
+    <div class="totals-table">
+        <table>
+            <tr>
+                <td>Subtotal</td>
+                <td>{{ "%.2f"|format(invoice.subtotal) }} €</td>
+            </tr>
+            <tr>
+                <td>Vat {{ "%.0f"|format(invoice.vat_rate) }}%</td>
+                <td>{{ "%.2f"|format(invoice.vat_amount) }} €</td>
+            </tr>
+            <tr>
+                <td>Total</td>
+                <td>{{ "%.2f"|format(invoice.total) }} €</td>
+            </tr>
+        </table>
+    </div>
+    
+    <div class="clear"></div>
+    
+    <div class="payment-info">
+        <table>
+            <tr>
+                <td>Payment Policy:</td>
+                <td>100% Payment of Acceptance</td>
+            </tr>
+            <tr>
+                <td>Bank Name:</td>
+                <td>Hellenic Bank</td>
+            </tr>
+            <tr>
+                <td>Beneficiary:</td>
+                <td>SML Hospitality Solutions Ltd</td>
+            </tr>
+            <tr>
+                <td>IBAN:</td>
+                <td>CY94050501900021901190519901</td>
+            </tr>
+            <tr>
+                <td>BIC:</td>
+                <td>HEBACY2N</td>
+            </tr>
+        </table>
+    </div>
+    
+    <div class="footer"></div>
+</body>
+</html> 

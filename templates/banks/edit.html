@@ -1,0 +1,70 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="container-fluid">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">
+                <i class="fas fa-university text-primary"></i>
+                Edit Bank
+            </h1>
+            <p class="page-subtitle">Update bank information</p>
+        </div>
+
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-body">
+                        <form method="POST">
+                            <div class="form-group">
+                                <label for="bankname">Bank Name <span class="text-danger">*</span></label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="bankname" 
+                                       name="bankname" 
+                                       value="{{ bank.bankname }}" 
+                                       required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="biccode">BIC Code</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="biccode" 
+                                       name="biccode" 
+                                       value="{{ bank.biccode }}">
+                            </div>
+                            
+                            <div class="form-group mt-4">
+                                <a href="{{ url_for('bank_list') }}" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left"></i> Back
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Save Changes
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Form validation
+    $('form').on('submit', function(e) {
+        var form = $(this);
+        if (form[0].checkValidity() === false) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        form.addClass('was-validated');
+    });
+});
+</script>
+{% endblock %} 

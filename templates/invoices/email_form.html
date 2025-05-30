@@ -1,0 +1,182 @@
+{% extends 'layout.html' %}
+
+{% block title %}Send Invoice {{ invoice.invoice_number }}{% endblock %}
+
+{% block styles %}
+<style>
+    .email-form {
+        background-color: #fff;
+        border-radius: 0.5rem;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    .invoice-preview {
+        background-color: #f8f9fa;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    .invoice-header {
+        margin-bottom: 1.5rem;
+    }
+    .invoice-title {
+        color: #4f97fb;
+        font-weight: 700;
+    }
+    .mail-options {
+        margin-top: 2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Send Invoice {{ invoice.invoice_number }}</h1>
+        <div>
+            <a href="{{ url_for('invoice_view', invoice_id=invoice.invoice_id) }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Invoice
+            </a>
+        </div>
+    </div>
+
+    {% if error %}
+    <div class="alert alert-danger mb-4">
+        <i class="fas fa-exclamation-circle"></i> 
+        <strong>Error:</strong> {{ error }}
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <!-- Email Form -->
+        <div class="col-lg-8">
+            <div class="card email-form">
+                <div class="card-body">
+                    {% if email_settings %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> 
+                            {% if email_settings.direct_send %}
+                                Email will be sent directly using the configured email server.
+                                <a href="{{ url_for('admin_email_settings') }}" class="alert-link">
+                                    <i class="fas fa-cog"></i> Manage email settings
+                                </a>
+                            {% else %}
+                                Your default email client will be opened with this information pre-filled.
+                                <a href="{{ url_for('admin_email_settings') }}" class="alert-link">
+                                    <i class="fas fa-cog"></i> Enable direct sending in settings
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i> 
+                            Email settings have not been configured yet. 
+                            <a href="{{ url_for('admin_email_settings') }}" class="alert-link">
+                                <i class="fas fa-cog"></i> Configure email settings
+                            </a>
+                        </div>
+                    {% endif %}
+                
+                    <h5 class="card-title mb-4">Email Details</h5>
+                    <form method="POST" action="{{ url_for('send_invoice_email', invoice_id=invoice.invoice_id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        
+                        <div class="mb-3">
+                            <label for="recipient_email" class="form-label">Recipient Email</label>
+                            <input type="email" class="form-control" id="recipient_email" name="recipient_email" value="{{ recipient_email }}" required>
+                            <small class="text-muted">The email address where the invoice will be sent.</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="subject" class="form-label">Subject</label>
+                            <input type="text" class="form-control" id="subject" name="subject" value="{{ subject }}" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="message" class="form-label">Message</label>
+                            <textarea class="form-control" id="message" name="message" rows="5">{{ message }}</textarea>
+                        </div>
+                        
+                        <div class="mail-options">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="include_pdf" name="include_pdf" checked>
+                                    <label class="form-check-label" for="include_pdf">
+                                        Include PDF Invoice
+                                    </label>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    {% if email_settings and email_settings.direct_send %}
+                                    <i class="fas fa-paper-plane"></i> Send Invoice
+                                    {% else %}
+                                    <i class="fas fa-external-link-alt"></i> Open in Email Client
+                                    {% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Invoice Preview -->
+        <div class="col-lg-4">
+            <div class="card invoice-preview">
+                <div class="card-body">
+                    <div class="invoice-header">
+                        <h5 class="invoice-title">Invoice Preview</h5>
+                    </div>
+                    
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>Invoice #</th>
+                            <td>{{ invoice.invoice_number }}</td>
+                        </tr>
+                        <tr>
+                            <th>Date</th>
+                            <td>{{ invoice.invoice_date.strftime('%Y-%m-%d') }}</td>
+                        </tr>
+                        <tr>
+                            <th>Due Date</th>
+                            <td>{{ invoice.due_date.strftime('%Y-%m-%d') if invoice.due_date else 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Customer</th>
+                            <td>{{ invoice.customername }}</td>
+                        </tr>
+                        <tr>
+                            <th>Total</th>
+                            <td class="text-end">{{ invoice.total }} EUR</td>
+                        </tr>
+                    </table>
+                    
+                    <h6 class="mt-4 mb-2">Items ({{ items|length }})</h6>
+                    <table class="table table-striped table-sm">
+                        <thead>
+                            <tr>
+                                <th>Description</th>
+                                <th class="text-end">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in items|sort(attribute='item_id') %}
+                            <tr>
+                                <td>{{ item.description }}</td>
+                                <td class="text-end">{{ item.total }} EUR</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    
+                    <div class="mt-4">
+                        <a href="{{ url_for('invoice_pdf', invoice_id=invoice.invoice_id) }}" class="btn btn-outline-secondary btn-sm" target="_blank">
+                            <i class="fas fa-file-pdf"></i> View PDF
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

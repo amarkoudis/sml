@@ -1,0 +1,467 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Financial Reports</h2>
+    
+    <!-- Monthly Summary Chart -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>Monthly Summary</h4>
+        </div>
+        <div class="card-body">
+            <canvas id="monthlyChart"></canvas>
+        </div>
+    </div>
+    
+    <!-- Event Revenue Table -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>Event Revenue</h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="eventRevenueTable" class="table modern-table table-striped table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Event Name</th>
+                            <th>Customer</th>
+                            <th>Date</th>
+                            <th>Hours</th>
+                            <th>Cost</th>
+                            <th>Revenue</th>
+                            <th>Profit</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Employee Costs Table -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>Employee Costs</h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="employeeCostsTable" class="table modern-table table-striped table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Role</th>
+                            <th>Total Shifts</th>
+                            <th>Total Hours</th>
+                            <th>Cost/Hour</th>
+                            <th>Total Cost</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Customer Revenue Table -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>Customer Revenue</h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="customerRevenueTable" class="table modern-table table-striped table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Customer</th>
+                            <th>Total Events</th>
+                            <th>Total Hours</th>
+                            <th>Total Costs</th>
+                            <th>Total Revenue</th>
+                            <th>Total Profit</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add this after your existing cards -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h4>Employee Revenue Export</h4>
+            <div>
+                <button id="exportCSV" class="btn btn-success" disabled>Export to CSV</button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label for="startDate">Start Date</label>
+                    <input type="date" id="startDate" class="form-control">
+                </div>
+                <div class="col-md-4">
+                    <label for="endDate">End Date</label>
+                    <input type="date" id="endDate" class="form-control">
+                </div>
+                <div class="col-md-4">
+                    <label>&nbsp;</label>
+                    <button id="generateReport" class="btn btn-primary form-control">Generate Report</button>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table id="employeeRevenueTable" class="table modern-table table-striped table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Employee Name</th>
+                            <th>Role</th>
+                            <th>Total Shifts</th>
+                            <th>Total Hours</th>
+                            <th>Cost/Hour</th>
+                            <th>Charge/Hour</th>
+                            <th>Total Cost</th>
+                            <th>Total Revenue</th>
+                            <th>Total Profit</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                    <tfoot>
+                        <tr class="font-weight-bold">
+                            <td colspan="3">Totals</td>
+                            <td id="totalHours">0</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td id="totalCost">€0.00</td>
+                            <td id="totalRevenue">€0.00</td>
+                            <td id="totalProfit">€0.00</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Add this function at the top of your script section
+function showError(elementId, message) {
+    const element = document.querySelector(elementId);
+    if (element) {
+        element.innerHTML = `<tr><td colspan="100%" class="text-center text-muted">${message}</td></tr>`;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Load all reports
+    loadMonthlyData();
+    loadEventRevenue();
+    loadEmployeeCosts();
+    loadCustomerRevenue();
+
+    const startDate = document.getElementById('startDate');
+    const endDate = document.getElementById('endDate');
+    const generateReport = document.getElementById('generateReport');
+    const exportCSV = document.getElementById('exportCSV');
+    let reportData = null;
+
+    generateReport.addEventListener('click', loadEmployeeRevenue);
+    exportCSV.addEventListener('click', exportToCSV);
+});
+
+function loadMonthlyData() {
+    fetch('/api/financial/monthly-summary')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                if (!data.data || data.data.length === 0) {
+                    document.getElementById('monthlyChart').style.display = 'none';
+                    return;
+                }
+                const months = data.data.map(item => item.month);
+                const revenue = data.data.map(item => item.total_revenue);
+                const costs = data.data.map(item => item.total_costs);
+                const profit = data.data.map(item => item.total_profit);
+
+                new Chart(document.getElementById('monthlyChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: months,
+                        datasets: [
+                            {
+                                label: 'Revenue',
+                                data: revenue,
+                                backgroundColor: 'rgba(54, 162, 235, 0.5)'
+                            },
+                            {
+                                label: 'Costs',
+                                data: costs,
+                                backgroundColor: 'rgba(255, 99, 132, 0.5)'
+                            },
+                            {
+                                label: 'Profit',
+                                data: profit,
+                                backgroundColor: 'rgba(75, 192, 192, 0.5)'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            } else {
+                document.getElementById('monthlyChart').style.display = 'none';
+                console.error('Error loading monthly data:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('monthlyChart').style.display = 'none';
+        });
+}
+
+function loadEventRevenue() {
+    const tbody = document.querySelector('#eventRevenueTable tbody');
+    showError('#eventRevenueTable tbody', 'Loading event data...');
+    
+    fetch('/api/financial/event-revenue')
+        .then(response => {
+            console.log('Response status:', response.status); // Debug log
+            return response.json().then(data => {
+                if (!response.ok) {
+                    throw new Error(data.message || `HTTP error! status: ${response.status}`);
+                }
+                return data;
+            });
+        })
+        .then(data => {
+            console.log('Event revenue data:', data); // Debug log
+            
+            if (data.status === 'success') {
+                if (!data.data || data.data.length === 0) {
+                    showError('#eventRevenueTable tbody', 'No event data available');
+                    return;
+                }
+                
+                tbody.innerHTML = data.data.map(event => `
+                    <tr>
+                        <td>${event.event_name || 'Unnamed Event'}</td>
+                        <td>${event.customer || 'No Customer'}</td>
+                        <td>${event.start_date || 'N/A'}</td>
+                        <td>${event.total_hours?.toFixed(2) || '0.00'}</td>
+                        <td>€${event.total_cost?.toFixed(2) || '0.00'}</td>
+                        <td>€${event.total_revenue?.toFixed(2) || '0.00'}</td>
+                        <td>€${event.profit?.toFixed(2) || '0.00'}</td>
+                        <td>${event.status || 'Unknown'}</td>
+                    </tr>
+                `).join('');
+            } else {
+                showError('#eventRevenueTable tbody', `Error: ${data.message || 'Unknown error'}`);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading event revenue:', error);
+            showError('#eventRevenueTable tbody', `Error loading event data: ${error.message}`);
+        });
+}
+
+function loadEmployeeCosts() {
+    fetch('/api/financial/employee-costs')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                const tbody = document.querySelector('#employeeCostsTable tbody');
+                tbody.innerHTML = data.data.map(emp => `
+                    <tr>
+                        <td>${emp.name}</td>
+                        <td>${emp.role}</td>
+                        <td>${emp.total_shifts}</td>
+                        <td>${emp.total_hours}</td>
+                        <td>€${emp.cost_per_hour.toFixed(2)}</td>
+                        <td>€${emp.total_cost.toFixed(2)}</td>
+                    </tr>
+                `).join('');
+            }
+        });
+}
+
+function loadCustomerRevenue() {
+    fetch('/api/financial/customer-revenue')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                const tbody = document.querySelector('#customerRevenueTable tbody');
+                tbody.innerHTML = data.data.map(cust => `
+                    <tr>
+                        <td>${cust.customer_name}</td>
+                        <td>${cust.total_events}</td>
+                        <td>${cust.total_hours}</td>
+                        <td>€${cust.total_costs.toFixed(2)}</td>
+                        <td>€${cust.total_revenue.toFixed(2)}</td>
+                        <td>€${cust.total_profit.toFixed(2)}</td>
+                    </tr>
+                `).join('');
+            }
+        });
+}
+
+function loadEmployeeRevenue() {
+    if (!startDate.value || !endDate.value) {
+        alert('Please select both start and end dates');
+        return;
+    }
+
+    const tbody = document.querySelector('#employeeRevenueTable tbody');
+    showError('#employeeRevenueTable tbody', 'Loading data...');
+    exportCSV.disabled = true;
+
+    fetch(`/api/financial/employee-revenue-export?start_date=${startDate.value}&end_date=${endDate.value}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                reportData = data.data;
+                if (!reportData || reportData.length === 0) {
+                    showError('#employeeRevenueTable tbody', 'No data available for selected date range');
+                    exportCSV.disabled = true;
+                    return;
+                }
+
+                let totalHours = 0;
+                let totalCost = 0;
+                let totalRevenue = 0;
+                let totalProfit = 0;
+                let csvRows = [];
+                let html = '';
+
+                reportData.forEach(event => {
+                    // Event header row
+                    html += `<tr class="table-primary"><td colspan="9"><strong>Event: ${event.event_name || 'Unnamed Event'}</strong></td></tr>`;
+                    (event.shifts || []).forEach(shift => {
+                        // Shift header row
+                        const shiftStart = shift.shift_start ? new Date(shift.shift_start).toLocaleString() : '';
+                        const shiftEnd = shift.shift_end ? new Date(shift.shift_end).toLocaleString() : '';
+                        html += `<tr class="table-secondary"><td colspan="9"><strong>Shift: ${shift.shift_name || 'Unnamed Shift'} (${shiftStart} - ${shiftEnd})</strong></td></tr>`;
+                        (shift.employees || []).forEach(emp => {
+                            totalHours += parseFloat(emp.total_hours) || 0;
+                            totalCost += parseFloat(emp.total_cost) || 0;
+                            totalRevenue += parseFloat(emp.total_revenue) || 0;
+                            totalProfit += parseFloat(emp.total_profit) || 0;
+                            html += `
+                                <tr>
+                                    <td>${emp.employeename}</td>
+                                    <td>${emp.role || 'N/A'}</td>
+                                    <td>-</td>
+                                    <td>${parseFloat(emp.total_hours).toFixed(2)}</td>
+                                    <td>€${parseFloat(emp.total_cost).toFixed(2)}</td>
+                                    <td>€${parseFloat(emp.total_revenue).toFixed(2)}</td>
+                                    <td>€${parseFloat(emp.total_profit).toFixed(2)}</td>
+                                </tr>
+                            `;
+                            // For CSV export
+                            csvRows.push([
+                                event.event_name,
+                                shift.shift_name,
+                                shiftStart,
+                                shiftEnd,
+                                emp.employeename,
+                                emp.role || 'N/A',
+                                '-',
+                                parseFloat(emp.total_hours).toFixed(2),
+                                parseFloat(emp.total_cost).toFixed(2),
+                                parseFloat(emp.total_revenue).toFixed(2),
+                                parseFloat(emp.total_profit).toFixed(2)
+                            ]);
+                        });
+                    });
+                });
+
+                tbody.innerHTML = html;
+
+                // Update totals
+                document.getElementById('totalHours').textContent = totalHours.toFixed(2);
+                document.getElementById('totalCost').textContent = `€${totalCost.toFixed(2)}`;
+                document.getElementById('totalRevenue').textContent = `€${totalRevenue.toFixed(2)}`;
+                document.getElementById('totalProfit').textContent = `€${totalProfit.toFixed(2)}`;
+
+                // Store the grouped CSV data for export
+                reportData = csvRows;
+                exportCSV.disabled = false;
+            } else {
+                showError('#employeeRevenueTable tbody', `Error: ${data.message || 'Unknown error'}`);
+                exportCSV.disabled = true;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showError('#employeeRevenueTable tbody', `Error loading data: ${error.message}`);
+            exportCSV.disabled = true;
+        });
+}
+
+function exportToCSV() {
+    if (!reportData) return;
+
+    const headers = [
+        'Event Name',
+        'Shift Name',
+        'Shift Start',
+        'Shift End',
+        'Employee Name',
+        'Role',
+        'Total Shifts',
+        'Total Hours',
+        'Cost/Hour',
+        'Charge/Hour',
+        'Total Cost',
+        'Total Revenue',
+        'Total Profit'
+    ];
+
+    const csvData = reportData.slice(); // Already grouped rows
+
+    // Add totals row
+    const totals = csvData.reduce((acc, curr) => {
+        return {
+            hours: acc.hours + parseFloat(curr[7]),
+            cost: acc.cost + parseFloat(curr[10]),
+            revenue: acc.revenue + parseFloat(curr[11]),
+            profit: acc.profit + parseFloat(curr[12])
+        };
+    }, { hours: 0, cost: 0, revenue: 0, profit: 0 });
+
+    csvData.push([
+        'TOTALS', '', '', '', '', '', '',
+        totals.hours.toFixed(2), '', '',
+        totals.cost.toFixed(2),
+        totals.revenue.toFixed(2),
+        totals.profit.toFixed(2)
+    ]);
+
+    // Create CSV content
+    const csvContent = [
+        headers.join(','),
+        ...csvData.map(row => row.join(','))
+    ].join('\n');
+
+    // Create and trigger download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    if (navigator.msSaveBlob) {
+        navigator.msSaveBlob(blob, 'employee_revenue.csv');
+    } else {
+        link.href = URL.createObjectURL(blob);
+        link.setAttribute('download', 'employee_revenue.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+}
+</script>
+{% endblock %} 

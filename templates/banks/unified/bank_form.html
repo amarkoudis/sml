@@ -1,0 +1,70 @@
+{% extends 'layout.html' %}
+
+{% block title %}
+    {% if is_edit_mode %}Edit Bank{% else %}Add New Bank{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">{% if is_edit_mode %}Edit Bank{% else %}Add New Bank{% endif %}</h1>
+            <div class="mt-2 text-muted">
+                {% if is_edit_mode %}Update the bank details{% else %}Create a new bank record{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Bank Information</h3>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('bank_unified_submit') }}" method="post" class="needs-validation" novalidate>
+                        {% if is_edit_mode %}
+                        <input type="hidden" name="bank_id" value="{{ bank.bankid }}">
+                        {% endif %}
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="bank_name" class="form-label required">Bank Name</label>
+                                <input type="text" class="form-control" id="bank_name" name="bank_name" 
+                                    value="{{ bank.name if is_edit_mode else '' }}" required>
+                                <div class="invalid-feedback">Please provide a bank name.</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="bic_code" class="form-label">BIC Code</label>
+                                <input type="text" class="form-control" id="bic_code" name="bic_code" 
+                                    value="{{ bank.bic_code if is_edit_mode and bank.bic_code else '' }}">
+                            </div>
+                        </div>
+                        <div class="form-footer">
+                            <a href="{{ url_for('bank_list') }}" class="btn btn-link">Cancel</a>
+                            <button type="submit" class="btn btn-primary">
+                                {% if is_edit_mode %}Update Bank{% else %}Create Bank{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form validation
+    var forms = document.querySelectorAll('.needs-validation');
+    Array.prototype.slice.call(forms).forEach(function(form) {
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    });
+});
+</script>
+{% endblock %} 

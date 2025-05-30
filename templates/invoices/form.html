@@ -1,0 +1,464 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ 'Create' if mode == 'create' else 'Edit' }} Invoice{% endblock %}
+
+{% block styles %}
+<style>
+    .line-item-row:hover {
+        background-color: #f8f9fa;
+    }
+    .remove-item {
+        cursor: pointer;
+        color: #dc3545;
+    }
+    .remove-item:hover {
+        color: #c82333;
+    }
+    .totals-section {
+        border-top: 2px solid #dee2e6;
+        margin-top: 1rem;
+        padding-top: 1rem;
+    }
+    .form-group label {
+        font-weight: 500;
+    }
+    .invoice-header {
+        background-color: #f8f9fa;
+        border-radius: 0.25rem;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    .invoice-items {
+        margin-bottom: 2rem;
+    }
+    .section-title {
+        border-bottom: 1px solid #dee2e6;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>{{ 'Create' if mode == 'create' else 'Edit' }} Invoice</h1>
+        <div>
+            <a href="{{ url_for('invoice_list') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to List
+            </a>
+        </div>
+    </div>
+
+    <form id="invoiceForm" method="POST" action="{% if mode == 'edit' %}{{ url_for('invoice_edit', invoice_id=invoice.invoice_id) }}{% else %}{{ url_for('invoice_create') }}{% endif %}" class="needs-validation" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="row">
+            <!-- Invoice Details -->
+            <div class="col-md-8">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Invoice Details</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="customer_id" class="form-label">Customer *</label>
+                                <select class="form-select" id="customer_id" name="customer_id" required>
+                                    <option value="">Select Customer</option>
+                                    {% for customer in customers %}
+                                    <option value="{{ customer.customerid }}" {% if invoice and invoice.customer_id == customer.customerid %}selected{% endif %}>
+                                        {{ customer.customername }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="invalid-feedback">Please select a customer.</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="event_id" class="form-label">Event</label>
+                                <select class="form-select" id="event_id" name="event_id">
+                                    <option value="">Select Event</option>
+                                    {% for event in events %}
+                                    <option value="{{ event.EventID }}" {% if (invoice and invoice.event_id == event.EventID) or (selected_event and selected_event.EventID == event.EventID) %}selected{% endif %}>
+                                        {{ event.EventName }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="invoice_number" class="form-label">Invoice Number *</label>
+                                <input type="text" class="form-control" id="invoice_number" name="invoice_number" 
+                                       value="{{ invoice.invoice_number if invoice else '' }}" required>
+                                <div class="invalid-feedback">Please enter an invoice number.</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="invoice_date" class="form-label">Invoice Date *</label>
+                                <input type="date" class="form-control" id="invoice_date" name="invoice_date" 
+                                       value="{% if invoice and invoice.invoice_date %}{% if invoice.invoice_date is string %}{{ invoice.invoice_date }}{% else %}{{ invoice.invoice_date.strftime('%Y-%m-%d') }}{% endif %}{% endif %}" required>
+                                <div class="invalid-feedback">Please select an invoice date.</div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="due_date" class="form-label">Due Date</label>
+                                <input type="date" class="form-control" id="due_date" name="due_date" 
+                                       value="{% if invoice and invoice.due_date %}{% if invoice.due_date is string %}{{ invoice.due_date }}{% else %}{{ invoice.due_date.strftime('%Y-%m-%d') }}{% endif %}{% endif %}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="vat_rate" class="form-label">VAT Rate (%)</label>
+                                <input type="number" class="form-control" id="vat_rate" name="vat_rate" step="0.01" 
+                                       value="{{ invoice.vat_rate if invoice else '19.00' }}" required>
+                            </div>
+                        </div>
+                        {% if mode == 'edit' %}
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="status" class="form-label">Status</label>
+                                <select class="form-select" id="status" name="status">
+                                    <option value="Draft" {% if invoice and invoice.status == 'Draft' %}selected{% endif %}>Draft</option>
+                                    <option value="Sent" {% if invoice and invoice.status == 'Sent' %}selected{% endif %}>Sent</option>
+                                    <option value="Paid" {% if invoice and invoice.status == 'Paid' %}selected{% endif %}>Paid</option>
+                                    <option value="Cancelled" {% if invoice and invoice.status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+                                </select>
+                            </div>
+                        </div>
+                        {% endif %}
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <label for="notes" class="form-label">Notes</label>
+                                <textarea class="form-control" id="notes" name="notes" rows="3">{{ invoice.notes if invoice else '' }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Invoice Items -->
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">Invoice Items</h5>
+                        <button type="button" class="btn btn-primary btn-sm" onclick="addItem()">
+                            <i class="fas fa-plus"></i> Add Item
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered" id="itemsTable">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 40%">Description</th>
+                                        <th style="width: 15%" id="quantity_header">{% if selected_event %}Hours{% else %}Quantity{% endif %}</th>
+                                        <th style="width: 20%">Unit Price</th>
+                                        <th style="width: 20%">Total</th>
+                                        <th style="width: 5%"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="itemsTableBody">
+                                    <!-- Items will be added here dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Summary</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Subtotal</label>
+                            <div class="input-group">
+                                <span class="input-group-text">€</span>
+                                <input type="number" class="form-control" id="subtotal" name="subtotal" step="0.01" readonly
+                                       value="{{ invoice.subtotal if invoice else '0.00' }}">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">VAT Amount</label>
+                            <div class="input-group">
+                                <span class="input-group-text">€</span>
+                                <input type="number" class="form-control" id="vat_amount" name="vat_amount" step="0.01" readonly
+                                       value="{{ invoice.vat_amount if invoice else '0.00' }}">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Total</label>
+                            <div class="input-group">
+                                <span class="input-group-text">€</span>
+                                <input type="number" class="form-control" id="total" name="total" step="0.01" readonly
+                                       value="{{ invoice.total if invoice else '0.00' }}">
+                            </div>
+                        </div>
+                        <input type="hidden" id="items" name="items" value="">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-save"></i> Save Invoice
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Initialize items array
+let items = [];
+
+// Populate items from database records
+{% if items %}
+    {% for item in items %}
+    items.push({
+        description: "{{ item.description|default('') }}",
+        quantity: {{ item.quantity|float|default(0) }},
+        unit_price: {{ item.unit_price|float|default(0) }},
+        total: {{ item.total|float|default(0) }}
+    });
+    {% endfor %}
+{% endif %}
+
+// Debug output
+console.log("Loaded items:", items);
+
+function formatNumber(num) {
+    return parseFloat(num).toFixed(2);
+}
+
+function calculateTotals() {
+    let subtotal = 0;
+    items.forEach(item => {
+        subtotal += parseFloat(item.total);
+    });
+    
+    const vatRate = parseFloat(document.getElementById('vat_rate').value) / 100;
+    const vatAmount = subtotal * vatRate;
+    const total = subtotal + vatAmount;
+    
+    document.getElementById('subtotal').value = formatNumber(subtotal);
+    document.getElementById('vat_amount').value = formatNumber(vatAmount);
+    document.getElementById('total').value = formatNumber(total);
+}
+
+function updateItemTotal(index) {
+    const quantity = parseFloat(document.getElementById(`quantity_${index}`).value) || 0;
+    const unitPrice = parseFloat(document.getElementById(`unit_price_${index}`).value) || 0;
+    const total = quantity * unitPrice;
+    
+    document.getElementById(`total_${index}`).value = formatNumber(total);
+    items[index].quantity = quantity;
+    items[index].unit_price = unitPrice;
+    items[index].total = total;
+    
+    calculateTotals();
+}
+
+function addItem() {
+    const index = items.length;
+    items.push({
+        description: '',
+        quantity: 1,
+        unit_price: 0,
+        total: 0
+    });
+    
+    const row = document.createElement('tr');
+    row.id = `item_${index}`;
+    row.innerHTML = `
+        <td>
+            <input type="text" class="form-control" id="description_${index}" 
+                   onchange="items[${index}].description = this.value" required>
+        </td>
+        <td>
+            <input type="number" class="form-control" id="quantity_${index}" value="1" min="0" step="0.01"
+                   onchange="updateItemTotal(${index})" required>
+        </td>
+        <td>
+            <div class="input-group">
+                <span class="input-group-text">€</span>
+                <input type="number" class="form-control" id="unit_price_${index}" value="0" min="0" step="0.01"
+                       onchange="updateItemTotal(${index})" required>
+            </div>
+        </td>
+        <td>
+            <div class="input-group">
+                <span class="input-group-text">€</span>
+                <input type="number" class="form-control" id="total_${index}" value="0" readonly>
+            </div>
+        </td>
+        <td class="text-center">
+            <button type="button" class="btn btn-danger btn-sm" onclick="removeItem(${index})">
+                <i class="fas fa-trash"></i>
+            </button>
+        </td>
+    `;
+    
+    document.getElementById('itemsTableBody').appendChild(row);
+}
+
+function removeItem(index) {
+    // Remove the item from the array
+    items.splice(index, 1);
+    
+    // Remove the row from the table
+    document.getElementById(`item_${index}`).remove();
+    
+    // Renumber the remaining rows
+    for (let i = index; i < items.length; i++) {
+        const oldIndex = i + 1;
+        const newIndex = i;
+        
+        // Update row and input IDs
+        const row = document.getElementById(`item_${oldIndex}`);
+        if (row) {
+            row.id = `item_${newIndex}`;
+            
+            // Update input elements
+            const descInput = row.querySelector(`input[id^="description_"]`);
+            if (descInput) {
+                descInput.id = `description_${newIndex}`;
+                descInput.setAttribute('onchange', `items[${newIndex}].description = this.value`);
+            }
+            
+            const quantityInput = row.querySelector(`input[id^="quantity_"]`);
+            if (quantityInput) {
+                quantityInput.id = `quantity_${newIndex}`;
+                quantityInput.setAttribute('onchange', `updateItemTotal(${newIndex})`);
+            }
+            
+            const priceInput = row.querySelector(`input[id^="unit_price_"]`);
+            if (priceInput) {
+                priceInput.id = `unit_price_${newIndex}`;
+                priceInput.setAttribute('onchange', `updateItemTotal(${newIndex})`);
+            }
+            
+            const totalInput = row.querySelector(`input[id^="total_"]`);
+            if (totalInput) {
+                totalInput.id = `total_${newIndex}`;
+            }
+            
+            // Update remove button
+            const removeBtn = row.querySelector('button');
+            if (removeBtn) {
+                removeBtn.setAttribute('onclick', `removeItem(${newIndex})`);
+            }
+        }
+    }
+    
+    // Recalculate totals
+    calculateTotals();
+}
+
+// Add event listener to form submission
+document.getElementById('invoiceForm').addEventListener('submit', function(e) {
+    // Prevent default submission
+    e.preventDefault();
+    
+    // Set the items value as JSON string - use the items array directly
+    document.getElementById('items').value = JSON.stringify(items);
+    
+    // Submit the form
+    this.submit();
+});
+
+// Initialize form
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("Items from server:", items);
+    
+    // Clear existing items in the table
+    document.getElementById('itemsTableBody').innerHTML = '';
+    
+    // Add existing items if in edit mode
+    if (items.length > 0) {
+        items.forEach((item, index) => {
+            console.log(`Adding item ${index}:`, item);
+            // Create new row
+            const row = document.createElement('tr');
+            row.id = `item_${index}`;
+            row.innerHTML = `
+                <td>
+                    <input type="text" class="form-control" id="description_${index}" 
+                        value="${item.description}" onchange="items[${index}].description = this.value" required>
+                </td>
+                <td>
+                    <input type="number" class="form-control" id="quantity_${index}" value="${item.quantity}" min="0" step="0.01"
+                        onchange="updateItemTotal(${index})" required>
+                </td>
+                <td>
+                    <div class="input-group">
+                        <span class="input-group-text">€</span>
+                        <input type="number" class="form-control" id="unit_price_${index}" value="${item.unit_price}" min="0" step="0.01"
+                            onchange="updateItemTotal(${index})" required>
+                    </div>
+                </td>
+                <td>
+                    <div class="input-group">
+                        <span class="input-group-text">€</span>
+                        <input type="number" class="form-control" id="total_${index}" value="${item.total}" readonly>
+                    </div>
+                </td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-danger btn-sm" onclick="removeItem(${index})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            
+            document.getElementById('itemsTableBody').appendChild(row);
+        });
+        calculateTotals();
+    } else {
+        // Add one empty item in create mode
+        addItem();
+        
+        // If we have a selected event, pre-populate first item
+        {% if selected_event %}
+        const event = {{ selected_event|tojson|safe }};
+        if (event) {
+            // Set description to event name
+            document.getElementById('description_0').value = `Event: ${event.EventName}`;
+            
+            // Set quantity to event total hours
+            const hours = parseFloat(event.totalhours || 0);
+            document.getElementById('quantity_0').value = hours;
+            
+            // Set unit price to event per hour selling
+            const ratePerHour = parseFloat(event.EventPerHourselling || 0);
+            document.getElementById('unit_price_0').value = ratePerHour;
+            
+            // Update totals
+            updateItemTotal(0);
+        }
+        {% endif %}
+    }
+    
+    // Initialize Select2 for dropdowns
+    $('#customer_id, #event_id').select2({
+        theme: 'bootstrap-5'
+    });
+    
+    // Add event listener for event dropdown changes
+    document.getElementById('event_id').addEventListener('change', function() {
+        {% for event in events %}
+        if (this.value == "{{ event.EventID }}") {
+            const eventData = {
+                EventName: "{{ event.EventName }}",
+                totalhours: {{ event.totalhours|default(0) }},
+                EventPerHourselling: {{ event.EventPerHourselling|default(0) }}
+            };
+            
+            // Update the first line item with event data
+            document.getElementById('description_0').value = `Event: ${eventData.EventName}`;
+            document.getElementById('quantity_0').value = eventData.totalhours;
+            document.getElementById('unit_price_0').value = eventData.EventPerHourselling;
+            updateItemTotal(0);
+        }
+        {% endfor %}
+    });
+});
+</script>
+{% endblock %} 

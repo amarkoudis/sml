@@ -1,0 +1,14 @@
+# File patterns: *.js, *.ts, *.py, *.jsx, *.tsx, *.html, *.css, *.scss, *.json, *.md
+
+# Conflict Resolution Guidelines for Collaborative AI-Assisted Development
+
+## Purpose
+This rule is designed to help manage and resolve code conflicts during collaborative development, especially when multiple contributors (human or AI) are working on the same files or features.
+
+## Branching Strategy
+- All contributors must create feature branches (`feature/xyz`) or bugfix branches (`bugfix/xyz`) from the `main` or `develop` branch.
+- Never commit directly to `main`.
+- Regularly sync your branch with the base branch to minimize conflicts.
+
+## Pull and Merge Rules
+- Pull the latest changes from the base branch before committing new changes:

@@ -1,0 +1,385 @@
+{% extends "layout.html" %}
+
+{% block title %}Employee Revenue Reports{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page header -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-6 mb-3 mb-md-0">
+                    <h1 class="h3 mb-0">Employee Revenue Reports</h1>
+                    <p class="text-muted mt-1">View and generate revenue reports for employees per event</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters Card -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('employee_revenue_reports') }}" class="row g-3" id="reportsForm">
+                <!-- Employee Filter -->
+                <div class="col-md-3">
+                    <label for="employee_id" class="form-label">Employee</label>
+                    <select class="form-select" id="employee_id" name="employee_id">
+                        <option value="">All Employees</option>
+                        {% for employee in employees %}
+                        <option value="{{ employee.employeeid }}" {% if selected_employee == employee.employeeid %}selected{% endif %}>
+                            {{ employee.employeename }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Event Filter -->
+                <div class="col-md-3">
+                    <label for="event_id" class="form-label">Event</label>
+                    <select class="form-select" id="event_id" name="event_id">
+                        <option value="">All Events</option>
+                        {% for event in events %}
+                        <option value="{{ event.EventID }}" {% if selected_event == event.EventID %}selected{% endif %}>
+                            {{ event.EventName }} {% if event.EventStart %}({{ event.EventStart|datetimeformat('%Y-%m-%d') }}){% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Date Range Filters -->
+                <div class="col-md-2">
+                    <label for="start_date" class="form-label">Start Date</label>
+                    <input type="date" class="form-control" id="start_date" name="start_date" value="{{ start_date }}">
+                </div>
+
+                <div class="col-md-2">
+                    <label for="end_date" class="form-label">End Date</label>
+                    <input type="date" class="form-control" id="end_date" name="end_date" value="{{ end_date }}">
+                </div>
+
+                <!-- Filter and Export Buttons -->
+                <div class="col-md-2 d-flex align-items-end gap-2">
+                    <button type="submit" class="btn btn-primary flex-grow-1">
+                        <i class="fas fa-filter me-1"></i> Filter
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="exportToExcel()">
+                        <i class="fas fa-file-excel me-1"></i>
+                    </button>
+                </div>
+
+                <!-- Hidden export parameter -->
+                <input type="hidden" name="export" id="exportParam" value="0">
+            </form>
+        </div>
+    </div>
+
+    <!-- Reports Table -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table modern-table table-striped table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Event</th>
+                            <th>Date</th>
+                            <th>Hours</th>
+                            <th>Selling Rate (€)</th>
+                            <th>Revenue (€)</th>
+                            <th>Employee Contributions (€)</th>
+                            <th>Employer Contributions (€)</th>
+                            <th>Net Amount (€)</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if reports %}
+                            {% for report in reports %}
+                            <tr class="calculation-row" style="cursor: pointer" 
+                                data-employee="{{ report.employeename }}"
+                                data-event="{{ report.EventName }}"
+                                data-date="{{ report.event_date|datetimeformat('%Y-%m-%d') }}"
+                                data-hours="{{ report.hours_worked_formatted }}"
+                                data-hours-decimal="{{ report.hours_worked }}"
+                                data-rate="{{ "%.2f"|format(report.base_rate) }}"
+                                data-revenue="{{ "%.2f"|format(report.total_revenue) }}"
+                                data-social-employee="{{ "%.2f"|format(report.social_employee) if report.social_employee else "0.00" }}"
+                                data-gesy-employee="{{ "%.2f"|format(report.gesy_employee) if report.gesy_employee else "0.00" }}"
+                                data-total-employee="{{ "%.2f"|format(report.employee_contribution) if report.employee_contribution else "0.00" }}"
+                                data-social-employer="{{ "%.2f"|format(report.social_employer) if report.social_employer else "0.00" }}"
+                                data-gesy-employer="{{ "%.2f"|format(report.gesy_employer) if report.gesy_employer else "0.00" }}"
+                                data-cohesion="{{ "%.2f"|format(report.cohesion_employer) if report.cohesion_employer else "0.00" }}"
+                                data-redundancy="{{ "%.2f"|format(report.redundancy_employer) if report.redundancy_employer else "0.00" }}"
+                                data-industrial="{{ "%.2f"|format(report.industrial_employer) if report.industrial_employer else "0.00" }}"
+                                data-total-employer="{{ "%.2f"|format(report.employer_contribution) if report.employer_contribution else "0.00" }}"
+                                data-net-amount="{{ "%.2f"|format(report.net_amount) if report.net_amount else "0.00" }}">
+                                <td>{{ report.employeename }}</td>
+                                <td>{{ report.EventName }}</td>
+                                <td>{{ report.event_date|datetimeformat('%Y-%m-%d') }}</td>
+                                <td>{{ report.hours_worked_formatted }}</td>
+                                <td>€{{ "%.2f"|format(report.base_rate) }}</td>
+                                <td>€{{ "%.2f"|format(report.total_revenue) }}</td>
+                                <td>
+                                    €{{ "%.2f"|format(report.employee_contribution) if report.employee_contribution else "0.00" }}
+                                    <small class="d-block text-muted">
+                                        Social: €{{ "%.2f"|format(report.social_employee) if report.social_employee else "0.00" }}<br>
+                                        GESY: €{{ "%.2f"|format(report.gesy_employee) if report.gesy_employee else "0.00" }}
+                                    </small>
+                                </td>
+                                <td>
+                                    €{{ "%.2f"|format(report.employer_contribution) if report.employer_contribution else "0.00" }}
+                                    <small class="d-block text-muted">
+                                        Social: €{{ "%.2f"|format(report.social_employer) if report.social_employer else "0.00" }}<br>
+                                        GESY: €{{ "%.2f"|format(report.gesy_employer) if report.gesy_employer else "0.00" }}<br>
+                                        Cohesion: €{{ "%.2f"|format(report.cohesion_employer) if report.cohesion_employer else "0.00" }}<br>
+                                        Redundancy: €{{ "%.2f"|format(report.redundancy_employer) if report.redundancy_employer else "0.00" }}<br>
+                                        Industrial: €{{ "%.2f"|format(report.industrial_employer) if report.industrial_employer else "0.00" }}
+                                    </small>
+                                </td>
+                                <td>€{{ "%.2f"|format(report.net_amount) if report.net_amount else "0.00" }}</td>
+                                <td>
+                                    <a href="{{ url_for('generate_employee_report', employee_id=report.employee_id, event_id=report.event_id) }}" 
+                                       class="btn btn-sm btn-outline-primary" title="Regenerate Report">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            <!-- Totals Row -->
+                            <tr class="table-primary">
+                                <td colspan="3"><strong>Totals</strong></td>
+                                <td><strong>{{ reports|sum(attribute='hours_worked')|decimal_to_hhmm }}</strong></td>
+                                <td></td>
+                                <td><strong>€{{ "%.2f"|format(reports|sum(attribute='total_revenue')) }}</strong></td>
+                                <td><strong>€{{ "%.2f"|format(reports|sum(attribute='employee_contribution')) }}</strong></td>
+                                <td><strong>€{{ "%.2f"|format(reports|sum(attribute='employer_contribution')) }}</strong></td>
+                                <td><strong>€{{ "%.2f"|format(reports|sum(attribute='net_amount')) }}</strong></td>
+                                <td></td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="10" class="text-center py-4">
+                                    <div class="text-muted">
+                                        <i class="fas fa-filter fa-2x mb-3"></i>
+                                        <p class="mb-0">Please use the filters above to view employee revenue reports.</p>
+                                        <p class="small">Select an employee, event, or date range to get started.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Generate Reports Modal -->
+<div class="modal fade" id="generateReportsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Generate Reports</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Select an event to generate reports for all employees:</p>
+                <select class="form-select" id="generateEventId">
+                    <option value="">Select Event</option>
+                    {% for event in events %}
+                    <option value="{{ event.EventID }}">
+                        {{ event.EventName }} ({{ event.EventStart|datetimeformat('%Y-%m-%d') }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="generateEventReports()">Generate</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Calculations Modal -->
+<div class="modal fade" id="calculationsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Detailed Calculations</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h6 class="border-bottom pb-2">Basic Information</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Employee:</strong> <span id="calc-employee"></span></p>
+                                <p><strong>Event:</strong> <span id="calc-event"></span></p>
+                                <p><strong>Date:</strong> <span id="calc-date"></span></p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Hours Worked:</strong> <span id="calc-hours"></span></p>
+                                <p><strong>Selling Rate:</strong> €<span id="calc-rate"></span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h6 class="border-bottom pb-2">Revenue Calculation</h6>
+                        <div class="bg-light p-3 rounded">
+                            <p class="mb-1">Hours Worked × Selling Rate = Revenue</p>
+                            <p class="mb-0 fs-5">
+                                <span id="calc-hours2"></span> × €<span id="calc-rate2"></span> = €<span id="calc-revenue"></span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6 class="border-bottom pb-2">Employee Contributions</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <tr>
+                                    <td>Social Insurance (8.80%)</td>
+                                    <td class="text-end">€<span id="calc-social-employee"></span></td>
+                                </tr>
+                                <tr>
+                                    <td>GESY (2.65%)</td>
+                                    <td class="text-end">€<span id="calc-gesy-employee"></span></td>
+                                </tr>
+                                <tr class="table-light fw-bold">
+                                    <td>Total Employee Contributions</td>
+                                    <td class="text-end">€<span id="calc-total-employee"></span></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="border-bottom pb-2">Employer Contributions</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <tr>
+                                    <td>Social Insurance (8.80%)</td>
+                                    <td class="text-end">€<span id="calc-social-employer"></span></td>
+                                </tr>
+                                <tr>
+                                    <td>GESY (2.90%)</td>
+                                    <td class="text-end">€<span id="calc-gesy-employer"></span></td>
+                                </tr>
+                                <tr>
+                                    <td>Cohesion Fund (2.00%)</td>
+                                    <td class="text-end">€<span id="calc-cohesion"></span></td>
+                                </tr>
+                                <tr>
+                                    <td>Redundancy Fund (1.20%)</td>
+                                    <td class="text-end">€<span id="calc-redundancy"></span></td>
+                                </tr>
+                                <tr>
+                                    <td>Industrial Training (0.05%)</td>
+                                    <td class="text-end">€<span id="calc-industrial"></span></td>
+                                </tr>
+                                <tr class="table-light fw-bold">
+                                    <td>Total Employer Contributions</td>
+                                    <td class="text-end">€<span id="calc-total-employer"></span></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-12">
+                        <h6 class="border-bottom pb-2">Final Calculation</h6>
+                        <div class="bg-light p-3 rounded">
+                            <p class="mb-1">Revenue - Employee Contributions = Net Amount</p>
+                            <p class="mb-0 fs-5">
+                                €<span id="calc-revenue2"></span> - €<span id="calc-total-employee2"></span> = €<span id="calc-net-amount"></span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize the calculations modal
+    const calculationsModal = new bootstrap.Modal(document.getElementById('calculationsModal'));
+    
+    // Add click handlers to rows
+    document.querySelectorAll('.calculation-row').forEach(row => {
+        row.addEventListener('click', function() {
+            // Basic Information
+            document.getElementById('calc-employee').textContent = this.dataset.employee;
+            document.getElementById('calc-event').textContent = this.dataset.event;
+            document.getElementById('calc-date').textContent = this.dataset.date;
+            document.getElementById('calc-hours').textContent = this.dataset.hours;
+            document.getElementById('calc-rate').textContent = this.dataset.rate;
+
+            // Revenue Calculation
+            document.getElementById('calc-hours2').textContent = this.dataset.hours;
+            document.getElementById('calc-rate2').textContent = this.dataset.rate;
+            document.getElementById('calc-revenue').textContent = this.dataset.revenue;
+
+            // Employee Contributions
+            document.getElementById('calc-social-employee').textContent = this.dataset.socialEmployee;
+            document.getElementById('calc-gesy-employee').textContent = this.dataset.gesyEmployee;
+            document.getElementById('calc-total-employee').textContent = this.dataset.totalEmployee;
+
+            // Employer Contributions
+            document.getElementById('calc-social-employer').textContent = this.dataset.socialEmployer;
+            document.getElementById('calc-gesy-employer').textContent = this.dataset.gesyEmployer;
+            document.getElementById('calc-cohesion').textContent = this.dataset.cohesion;
+            document.getElementById('calc-redundancy').textContent = this.dataset.redundancy;
+            document.getElementById('calc-industrial').textContent = this.dataset.industrial;
+            document.getElementById('calc-total-employer').textContent = this.dataset.totalEmployer;
+
+            // Final Calculation
+            document.getElementById('calc-revenue2').textContent = this.dataset.revenue;
+            document.getElementById('calc-total-employee2').textContent = this.dataset.totalEmployee;
+            document.getElementById('calc-net-amount').textContent = this.dataset.netAmount;
+
+            calculationsModal.show();
+        });
+    });
+
+    // Initialize any Bootstrap tooltips
+    var tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    tooltips.forEach(function(tooltip) {
+        new bootstrap.Tooltip(tooltip);
+    });
+});
+
+function exportToExcel() {
+    document.getElementById('exportParam').value = '1';
+    document.getElementById('reportsForm').submit();
+    document.getElementById('exportParam').value = '0';
+}
+
+function generateEventReports() {
+    const eventId = document.getElementById('generateEventId').value;
+    if (eventId) {
+        window.location.href = "{{ url_for('generate_event_reports', event_id=0) }}".replace('0', eventId);
+    }
+}
+</script>
+
+<style>
+.calculation-row:hover {
+    background-color: rgba(0,0,0,0.05) !important;
+}
+</style>
+{% endblock %} 

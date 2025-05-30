@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{% endblock %}</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
+    
+    <!-- CSS Files -->
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- jQuery UI CSS -->
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+    <!-- Flatpickr CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
+    <!-- SweetAlert2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <style>
+        /* Global layout */
+        body {
+            overflow-x: hidden;
+            background-color: #f5f8fa;
+        }
+        
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        /* Main sidebar styling */
+        .main-sidebar {
+            width: 280px;
+            background: linear-gradient(135deg, #3a4a64 0%, #1e293b 100%);
+            color: #fff;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Form sidebar styling */
+        .form-sidebar {
+            width: 280px;
+            background: #fff;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 900;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            left: 280px; /* Position it next to main sidebar */
+            border-right: 1px solid #e0e0e0;
+        }
+        
+        /* Main content area */
+        .main-content {
+            flex: 1;
+            margin-left: 280px; /* Default margin for single sidebar */
+            padding: 30px;
+            transition: all 0.3s ease;
+            min-height: 100vh;
+            background-color: #f5f8fa;
+        }
+        
+        /* Adjust main content when form sidebar is present */
+        .has-form-sidebar .main-content {
+            margin-left: 560px; /* Adjust for both sidebars */
+        }
+        
+        /* Sidebar headers */
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .form-sidebar .sidebar-header {
+            border-bottom-color: #e0e0e0;
+        }
+        
+        /* Navigation items */
+        .nav-item {
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: inherit;
+            text-decoration: none;
+            border-left: 3px solid transparent;
+        }
+        
+        .main-sidebar .nav-item:hover,
+        .main-sidebar .nav-item.active {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-left-color: #4f97fb;
+        }
+        
+        .form-sidebar .nav-item:hover,
+        .form-sidebar .nav-item.active {
+            background-color: rgba(79, 151, 251, 0.1);
+            border-left-color: #4f97fb;
+            color: #4f97fb;
+        }
+        
+        .nav-item i {
+            width: 24px;
+            text-align: center;
+            margin-right: 12px;
+            font-size: 1.1rem;
+        }
+        
+        /* Responsive design */
+        @media (max-width: 1200px) {
+            .main-sidebar {
+                width: 70px;
+            }
+            
+            .form-sidebar {
+                left: 70px;
+            }
+            
+            .main-content {
+                margin-left: 70px;
+            }
+            
+            .has-form-sidebar .main-content {
+                margin-left: 350px;
+            }
+            
+            .main-sidebar .nav-text,
+            .main-sidebar .sidebar-title {
+                display: none;
+            }
+            
+            .main-sidebar .nav-item {
+                padding: 15px;
+                justify-content: center;
+            }
+            
+            .main-sidebar .nav-item i {
+                margin: 0;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .main-sidebar,
+            .form-sidebar {
+                position: fixed;
+                top: 0;
+                bottom: 0;
+                left: -280px;
+            }
+            
+            .main-sidebar.show {
+                left: 0;
+            }
+            
+            .form-sidebar.show {
+                left: 0;
+            }
+            
+            .main-content {
+                margin-left: 0 !important;
+                padding: 15px;
+            }
+            
+            .sidebar-toggle {
+                display: block !important;
+            }
+        }
+        
+        /* Add section headers styling */
+        .sidebar-section-header {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #a0aec0;
+            padding: 1rem 1.5rem 0.5rem;
+            letter-spacing: 0.05em;
+            margin-top: 0.5rem;
+        }
+    </style>
+    {% block styles %}{% endblock %}
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <div class="app-container">
+        <!-- Main Sidebar -->
+        <div class="main-sidebar">
+            <div class="sidebar-header">
+                <h3 class="sidebar-title">SML System</h3>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="{{ url_for('home') }}" class="nav-item {% if request.endpoint == 'home' %}active{% endif %}">
+                    <i class="fas fa-home"></i>
+                    <span class="nav-text">Dashboard</span>
+                </a>
+                <a href="{{ url_for('event_list') }}" class="nav-item {% if 'event' in request.endpoint %}active{% endif %}">
+                    <i class="fas fa-calendar"></i>
+                    <span class="nav-text">Events</span>
+                </a>
+                <a href="{{ url_for('employee_list') }}" class="nav-item {% if 'employee' in request.endpoint %}active{% endif %}">
+                    <i class="fas fa-user-tie"></i>
+                    <span class="nav-text">Employees</span>
+                </a>
+                <a href="{{ url_for('customer_list') }}" class="nav-item {% if 'customer' in request.endpoint %}active{% endif %}">
+                    <i class="fas fa-users"></i>
+                    <span class="nav-text">Customers</span>
+                </a>
+                <a href="{{ url_for('company_list') }}" class="nav-item {% if 'company' in request.endpoint %}active{% endif %}">
+                    <i class="fas fa-building"></i>
+                    <span class="nav-text">Companies</span>
+                </a>
+                <a href="{{ url_for('bank_list') }}" class="nav-item {% if 'bank' in request.endpoint %}active{% endif %}">
+                    <i class="fas fa-university"></i>
+                    <span class="nav-text">Banks</span>
+                </a>
+                <a href="{{ url_for('invoice_list') }}" class="nav-item {% if 'invoice' in request.endpoint %}active{% endif %}">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                    <span class="nav-text">Invoices</span>
+                </a>
+                
+                <!-- Reports Section -->
+                <div class="sidebar-section-header">Reports</div>
+                <a href="{{ url_for('employee_event_earnings') }}" class="nav-item {% if request.endpoint == 'employee_event_earnings' %}active{% endif %}">
+                    <i class="fas fa-chart-line"></i>
+                    <span class="nav-text">Employee Event Earnings</span>
+                </a>
+                
+                <!-- Admin Section -->
+                {% if session.get('role') == 'admin' %}
+                <div class="sidebar-section-header">Administration</div>
+                <a href="{{ url_for('admin_dashboard') }}" class="nav-item {% if request.endpoint == 'admin_dashboard' %}active{% endif %}">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span class="nav-text">Admin Dashboard</span>
+                </a>
+                <a href="{{ url_for('contribution_settings') }}" class="nav-item {% if request.endpoint == 'contribution_settings' %}active{% endif %}">
+                    <i class="fas fa-percentage"></i>
+                    <span class="nav-text">Contribution Settings</span>
+                </a>
+                <a href="{{ url_for('admin_email_settings') }}" class="nav-item {% if request.endpoint == 'admin_email_settings' %}active{% endif %}">
+                    <i class="fas fa-envelope-open-text"></i>
+                    <span class="nav-text">Email Settings</span>
+                </a>
+                {% endif %}
+                
+                <a href="{{ url_for('logout') }}" class="nav-item">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span class="nav-text">Logout</span>
+                </a>
+            </nav>
+        </div>
+
+        <!-- Form Sidebar (if needed) -->
+        {% block form_sidebar %}{% endblock %}
+
+        <!-- Main Content -->
+        <div class="main-content {% if self.form_sidebar() %}has-form-sidebar{% endif %}">
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category if category != 'message' else 'info' }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <!-- Modals -->
+    {% block modals %}
+    <!-- Default modals that might be needed globally -->
+    <div class="modal fade" id="shiftModal" tabindex="-1" aria-labelledby="shiftModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="shiftModalLabel">Add Shift</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="shiftForm">
+                        <input type="hidden" id="editShiftIndex" value="">
+                        <div class="form-group mb-3">
+                            <label for="shiftName">Shift Name</label>
+                            <input type="text" class="form-control" id="shiftName" required>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="shiftType">Shift Type</label>
+                            <select class="form-control" id="shiftType" required>
+                                <option value="">Select Shift Type</option>
+                                <option value="Full">Full Shift</option>
+                                <option value="Partial">Partial Shift</option>
+                            </select>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="shiftStart">Start Time</label>
+                                    <input type="datetime-local" class="form-control" id="shiftStart" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="shiftEnd">End Time</label>
+                                    <input type="datetime-local" class="form-control" id="shiftEnd" required>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="saveShiftBtn">Save Shift</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Employee Assignment Modal -->
+    <div class="modal fade" id="employeeModal" tabindex="-1" aria-labelledby="employeeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="employeeModalLabel">Assign Employees</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="shiftDetails" class="mb-3 p-3 bg-light rounded">
+                        <p><strong>Shift:</strong> <span id="assignmentShiftName"></span></p>
+                        <p><strong>Type:</strong> <span id="assignmentShiftType"></span></p>
+                        <p><strong>Time:</strong> <span id="assignmentShiftTime"></span></p>
+                    </div>
+                    
+                    <form id="employeeAssignmentForm">
+                        <input type="hidden" id="assignShiftIndex" value="">
+                        <div class="table-responsive">
+                            <table class="table table-striped" id="employeeAssignmentTable">
+                                <thead>
+                                    <tr>
+                                        <th>Assign</th>
+                                        <th>Name</th>
+                                        <th>Role</th>
+                                        <th>Gender</th>
+                                        <th id="hoursHeader">Assigned Hours</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="employeeAssignmentTableBody">
+                                    <!-- Will be populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <span class="me-auto" id="assignedHoursInfo">Total Assigned Hours: <span id="totalAssignedHours">0</span></span>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="saveEmployeeAssignmentBtn">Save Assignments</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endblock %}
+
+    <!-- JS Files -->
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- jQuery UI -->
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Select2 -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <!-- Flatpickr -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    <script>
+        // Initialize sidebars
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add mobile toggle button if not present
+            if (!document.querySelector('.sidebar-toggle')) {
+                const toggleBtn = document.createElement('button');
+                toggleBtn.className = 'sidebar-toggle btn btn-primary d-md-none';
+                toggleBtn.innerHTML = '<i class="fas fa-bars"></i>';
+                toggleBtn.style.position = 'fixed';
+                toggleBtn.style.top = '1rem';
+                toggleBtn.style.left = '1rem';
+                toggleBtn.style.zIndex = '1100';
+                toggleBtn.style.display = 'none';
+                document.body.appendChild(toggleBtn);
+                
+                // Toggle main sidebar
+                toggleBtn.addEventListener('click', function() {
+                    document.querySelector('.main-sidebar').classList.toggle('show');
+                });
+            }
+            
+            // Close sidebars when clicking outside
+            document.addEventListener('click', function(e) {
+                const mainSidebar = document.querySelector('.main-sidebar');
+                const formSidebar = document.querySelector('.form-sidebar');
+                const toggleBtn = document.querySelector('.sidebar-toggle');
+                
+                if (window.innerWidth <= 768) {
+                    if (!mainSidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
+                        mainSidebar.classList.remove('show');
+                    }
+                    if (formSidebar && !formSidebar.contains(e.target)) {
+                        formSidebar.classList.remove('show');
+                    }
+                }
+            });
+            
+            // Fix for modal sizing issues - applies to all modals
+            const fixModalSizes = function() {
+                console.log("Modal size fixer initialized");
+                
+                // Apply more specific CSS classes to avoid conflicts
+                const styleEl = document.createElement('style');
+                styleEl.innerHTML = `
+                    /* Modal size overrides with scoped class names */
+                    .sml-modal-sm { max-width: 300px !important; width: 95% !important; }
+                    .sml-modal-md { max-width: 500px !important; width: 95% !important; }
+                    .sml-modal-lg { max-width: 700px !important; width: 95% !important; }
+                    .sml-modal-xl { max-width: 900px !important; width: 95% !important; }
+                    .sml-modal-fullscreen { width: 100% !important; max-width: 100% !important; height: 100vh !important; margin: 0 !important; }
+                    .sml-modal-fullscreen .modal-content { height: 100% !important; border: 0 !important; border-radius: 0 !important; }
+                    
+                    /* Fix modal content height and scrolling */
+                    .sml-modal-content-scroll { max-height: 85vh !important; overflow-y: auto !important; }
+                    
+                    /* Fix modal dialog positioning */
+                    .modal-dialog { margin: 1.75rem auto !important; }
+                    
+                    /* Fix modal backdrop issues */
+                    .modal-backdrop { opacity: 0.5 !important; }
+                    
+                    /* Fix z-index for modal elements */
+                    .modal { z-index: 1050 !important; }
+                    .modal-content { position: relative; z-index: 1051 !important; }
+                    .modal-dialog input,
+                    .modal-dialog select,
+                    .modal-dialog textarea,
+                    .modal-dialog button { z-index: 1052 !important; }
+                `;
+                document.head.appendChild(styleEl);
+                
+                // Apply size fixes when any modal is opened
+                const applyModalSizes = function(modalElement) {
+                    if (!modalElement) return;
+                    console.log("Fixing modal size for", modalElement.id);
+                    
+                    setTimeout(function() {
+                        const modalDialog = modalElement.querySelector('.modal-dialog');
+                        if (!modalDialog) return;
+                        
+                        // Add our scoped classes to avoid conflicts
+                        if (modalDialog.classList.contains('modal-sm')) {
+                            modalDialog.classList.add('sml-modal-sm');
+                        } 
+                        else if (modalDialog.classList.contains('modal-lg')) {
+                            modalDialog.classList.add('sml-modal-lg');
+                        }
+                        else if (modalDialog.classList.contains('modal-xl')) {
+                            modalDialog.classList.add('sml-modal-xl');
+                        }
+                        else if (modalDialog.classList.contains('modal-fullscreen')) {
+                            modalDialog.classList.add('sml-modal-fullscreen');
+                        }
+                        else {
+                            modalDialog.classList.add('sml-modal-md');
+                        }
+                        
+                        // Add scrolling class to modal content
+                        const modalContent = modalElement.querySelector('.modal-content');
+                        if (modalContent) {
+                            modalContent.classList.add('sml-modal-content-scroll');
+                        }
+                        
+                        console.log("Applied classes to modal", modalElement.id);
+                    }, 50); // Short delay to ensure Bootstrap has finished initialization
+                };
+                
+                // Handle all show events
+                document.addEventListener('shown.bs.modal', function(event) {
+                    applyModalSizes(event.target);
+                    
+                    // Refresh any charts
+                    if (typeof Chart !== 'undefined') {
+                        const charts = event.target.querySelectorAll('canvas');
+                        charts.forEach(canvas => {
+                            const chart = Chart.getChart(canvas);
+                            if (chart) {
+                                chart.resize();
+                            }
+                        });
+                    }
+                }, true);
+                
+                // Find all existing modals and set up event handlers
+                const modals = document.querySelectorAll('.modal');
+                modals.forEach(modal => {
+                    // Set up click handler on all buttons that trigger this modal
+                    const triggers = document.querySelectorAll(`[data-bs-toggle="modal"][data-bs-target="#${modal.id}"]`);
+                    triggers.forEach(trigger => {
+                        trigger.addEventListener('click', function() {
+                            setTimeout(() => applyModalSizes(modal), 10);
+                        });
+                    });
+                    
+                    // Also add shown.bs.modal event listener directly
+                    modal.addEventListener('shown.bs.modal', function() {
+                        applyModalSizes(this);
+                    });
+                });
+            };
+            
+            // Initialize modal fixes
+            fixModalSizes();
+        });
+    </script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html> 

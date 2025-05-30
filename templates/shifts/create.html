@@ -1,0 +1,96 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="container-fluid">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">
+                <i class="fas fa-plus-circle text-primary"></i>
+                Create Shift for {{ event.EventName }}
+            </h1>
+            <a href="{{ url_for('edit_event_unified', event_id=event.EventID) }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Event
+            </a>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <form method="POST" class="needs-validation" novalidate>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="shiftname">Shift Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="shiftname" name="shiftname" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="shifttype">Shift Type <span class="text-danger">*</span></label>
+                                <select class="form-control" id="shifttype" name="shifttype" required>
+                                    <option value="Full">Full Shift</option>
+                                    <option value="Partial">Partial Shift</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="shiftstart">Start Time <span class="text-danger">*</span></label>
+                                <input type="datetime-local" class="form-control" id="shiftstart" name="shiftstart" 
+                                       min="{{ event.EventStart.strftime('%Y-%m-%dT%H:%M') }}" 
+                                       max="{{ event.EventEnd.strftime('%Y-%m-%dT%H:%M') }}" required>
+                                <small class="form-text text-muted">
+                                    Must be between event start ({{ event.EventStart.strftime('%Y-%m-%d %H:%M') }}) 
+                                    and end ({{ event.EventEnd.strftime('%Y-%m-%d %H:%M') }})
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="shiftend">End Time <span class="text-danger">*</span></label>
+                                <input type="datetime-local" class="form-control" id="shiftend" name="shiftend" 
+                                       min="{{ event.EventStart.strftime('%Y-%m-%dT%H:%M') }}" 
+                                       max="{{ event.EventEnd.strftime('%Y-%m-%dT%H:%M') }}" required>
+                                <small class="form-text text-muted">
+                                    Must be between event start ({{ event.EventStart.strftime('%Y-%m-%d %H:%M') }}) 
+                                    and end ({{ event.EventEnd.strftime('%Y-%m-%d %H:%M') }})
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 
+                        <strong>Note:</strong> For full shifts, all employees will be automatically assigned. 
+                        For partial shifts, you'll be able to assign specific employees and their hours after creating the shift.
+                    </div>
+                    
+                    <!-- Form Actions -->
+                    <div class="form-actions mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Create Shift
+                        </button>
+                        <a href="{{ url_for('edit_event_unified', event_id=event.EventID) }}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Set default values for shift start and end times
+    document.addEventListener('DOMContentLoaded', function() {
+        const eventStart = "{{ event.EventStart.strftime('%Y-%m-%dT%H:%M') }}";
+        const eventEnd = "{{ event.EventEnd.strftime('%Y-%m-%dT%H:%M') }}";
+        
+        document.getElementById('shiftstart').value = eventStart;
+        document.getElementById('shiftend').value = eventEnd;
+    });
+</script>
+{% endblock %} 

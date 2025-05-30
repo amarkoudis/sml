@@ -1,0 +1,364 @@
+{% extends 'layout.html' %}
+
+{% block title %}Invoice {{ invoice.invoice_number }}{% endblock %}
+
+{% block styles %}
+<style>
+    .invoice-container {
+        background-color: #fff;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        border-radius: 0.5rem;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    .invoice-header {
+        border-bottom: 1px solid #dee2e6;
+        padding-bottom: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .invoice-title {
+        color: #4f97fb;
+        font-weight: 700;
+    }
+    .invoice-details {
+        margin-bottom: 2rem;
+    }
+    .invoice-details-label {
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+    .invoice-details-value {
+        margin-bottom: 1rem;
+    }
+    .invoice-items {
+        margin-bottom: 2rem;
+    }
+    .invoice-items table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+    .invoice-items th {
+        background-color: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+        padding: 0.75rem;
+        text-align: left;
+    }
+    .invoice-items td {
+        border-bottom: 1px solid #dee2e6;
+        padding: 0.75rem;
+    }
+    .invoice-totals {
+        text-align: right;
+        margin-top: 1rem;
+    }
+    .invoice-notes {
+        margin-top: 2rem;
+        padding-top: 1rem;
+        border-top: 1px solid #dee2e6;
+    }
+    .invoice-status {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-weight: 500;
+        font-size: 0.875rem;
+    }
+    .status-draft {
+        background-color: #e2e3e5;
+        color: #383d41;
+    }
+    .status-sent {
+        background-color: #cce5ff;
+        color: #004085;
+    }
+    .status-paid {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    .status-cancelled {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+        body {
+            padding: 0;
+            margin: 0;
+            font-size: 12pt;
+        }
+        .invoice-container {
+            width: 100%;
+            box-shadow: none;
+            border: none;
+            padding: 0;
+        }
+    }
+    .timeline {
+        position: relative;
+        padding: 20px 0;
+    }
+
+    .timeline-item {
+        position: relative;
+        padding-left: 40px;
+        margin-bottom: 30px;
+    }
+
+    .timeline-marker {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+    }
+
+    .timeline-item:not(:last-child):before {
+        content: '';
+        position: absolute;
+        left: 7px;
+        top: 16px;
+        height: calc(100% + 14px);
+        width: 2px;
+        background-color: #e9ecef;
+    }
+
+    .timeline-content {
+        padding-bottom: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Invoice {{ invoice.invoice_number }}</h1>
+        <div class="btn-group">
+            <a href="{{ url_for('invoice_list') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to List
+            </a>
+            <a href="{{ url_for('invoice_edit', invoice_id=invoice.invoice_id) }}" class="btn btn-warning">
+                <i class="fas fa-edit"></i> Edit
+            </a>
+            <a href="{{ url_for('invoice_pdf', invoice_id=invoice.invoice_id) }}" class="btn btn-info" target="_blank">
+                <i class="fas fa-file-pdf"></i> Download PDF
+            </a>
+            <a href="{{ url_for('send_invoice_email', invoice_id=invoice.invoice_id) }}" class="btn btn-primary">
+                <i class="fas fa-envelope"></i> Send Email
+            </a>
+            {% if invoice.status == 'Draft' %}
+            <button type="button" class="btn btn-danger" onclick="deleteInvoice({{ invoice.invoice_id }})">
+                <i class="fas fa-trash"></i> Delete
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Invoice Details -->
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Invoice Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Customer</dt>
+                                <dd class="col-sm-8">{{ invoice.customername }}</dd>
+                                
+                                <dt class="col-sm-4">Event</dt>
+                                <dd class="col-sm-8">{{ invoice.event_name or 'N/A' }}</dd>
+                                
+                                <dt class="col-sm-4">Invoice Date</dt>
+                                <dd class="col-sm-8">{{ invoice.invoice_date.strftime('%Y-%m-%d') }}</dd>
+                                
+                                <dt class="col-sm-4">Due Date</dt>
+                                <dd class="col-sm-8">{{ invoice.due_date.strftime('%Y-%m-%d') if invoice.due_date else 'N/A' }}</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Status</dt>
+                                <dd class="col-sm-8">
+                                    <span class="badge bg-{{ {
+                                        'Draft': 'secondary',
+                                        'Sent': 'primary',
+                                        'Paid': 'success',
+                                        'Cancelled': 'danger'
+                                    }[invoice.status] }}">
+                                        {{ invoice.status }}
+                                    </span>
+                                </dd>
+                                
+                                <dt class="col-sm-4">VAT Rate</dt>
+                                <dd class="col-sm-8">{{ invoice.vat_rate }}%</dd>
+                                
+                                <dt class="col-sm-4">Created</dt>
+                                <dd class="col-sm-8">{{ invoice.created_at.strftime('%Y-%m-%d %H:%M') if invoice.created_at else 'N/A' }}</dd>
+                                
+                                <dt class="col-sm-4">Last Updated</dt>
+                                <dd class="col-sm-8">{{ invoice.updated_at.strftime('%Y-%m-%d %H:%M') if invoice.updated_at else 'N/A' }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+
+                    {% if invoice.notes %}
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <h6>Notes</h6>
+                            <p class="mb-0">{{ invoice.notes }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Invoice Items -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Invoice Items</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th style="width: 50%">Description</th>
+                                    <th style="width: 15%" class="text-end">Quantity</th>
+                                    <th style="width: 15%" class="text-end">Unit Price</th>
+                                    <th style="width: 20%" class="text-end">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in items %}
+                                <tr>
+                                    <td>{{ item.description }}</td>
+                                    <td class="text-end">{{ "%.2f"|format(item.quantity) }}</td>
+                                    <td class="text-end">€{{ "%.2f"|format(item.unit_price) }}</td>
+                                    <td class="text-end">€{{ "%.2f"|format(item.total) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="3" class="text-end"><strong>Subtotal</strong></td>
+                                    <td class="text-end">€{{ "%.2f"|format(invoice.subtotal) }}</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="3" class="text-end"><strong>VAT ({{ invoice.vat_rate }}%)</strong></td>
+                                    <td class="text-end">€{{ "%.2f"|format(invoice.vat_amount) }}</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="3" class="text-end"><strong>Total</strong></td>
+                                    <td class="text-end"><strong>€{{ "%.2f"|format(invoice.total) }}</strong></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Timeline -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Status Timeline</h5>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-secondary"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-0">Created as Draft</h6>
+                                <small class="text-muted">{{ invoice.created_at.strftime('%Y-%m-%d %H:%M') if invoice.created_at else 'N/A' }}</small>
+                            </div>
+                        </div>
+                        {% if invoice.status != 'Draft' %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-primary"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-0">Sent to Customer</h6>
+                                <small class="text-muted">{{ invoice.sent_at.strftime('%Y-%m-%d %H:%M') if invoice.sent_at else 'N/A' }}</small>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if invoice.status == 'Paid' %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-success"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-0">Payment Received</h6>
+                                <small class="text-muted">{{ invoice.paid_at.strftime('%Y-%m-%d %H:%M') if invoice.paid_at else 'N/A' }}</small>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if invoice.status == 'Cancelled' %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-danger"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-0">Cancelled</h6>
+                                <small class="text-muted">{{ invoice.cancelled_at.strftime('%Y-%m-%d %H:%M') if invoice.cancelled_at else 'N/A' }}</small>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function deleteInvoice(invoiceId) {
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "You won't be able to revert this!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Yes, delete it!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(`/invoice/${invoiceId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire(
+                        'Deleted!',
+                        'Invoice has been deleted.',
+                        'success'
+                    ).then(() => {
+                        window.location.href = "{{ url_for('invoice_list') }}";
+                    });
+                } else {
+                    Swal.fire(
+                        'Error!',
+                        data.message || 'Failed to delete invoice.',
+                        'error'
+                    );
+                }
+            })
+            .catch(error => {
+                Swal.fire(
+                    'Error!',
+                    'Failed to delete invoice.',
+                    'error'
+                );
+            });
+        }
+    });
+}
+</script>
+{% endblock %} 

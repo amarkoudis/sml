@@ -1,0 +1,291 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page header with actions -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-6 mb-3 mb-md-0">
+                    <h1 class="h3 mb-0">Company Management</h1>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    {% if total_count == 0 %}
+                    <a href="{{ url_for('add_company_page') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i> New Company
+                    </a>
+                    {% else %}
+                    <span class="text-muted">Only one company record is allowed</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Companies Card -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-white">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h5 class="card-header-title">All Companies</h5>
+                </div>
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input type="text" class="form-control" id="companySearch" placeholder="Search companies...">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if companies %}
+            <div class="table-responsive">
+                <table class="table modern-table table-hover table-striped mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Company Name</th>
+                            <th>Contact Information</th>
+                            <th>Banking Details</th>
+                            <th>VAT Number</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="companyTableBody">
+                        {% for company in companies %}
+                        <tr>
+                            <td class="fw-semibold">
+                                <div class="d-flex align-items-center">
+                                    {% if company.company_logo %}
+                                    <div class="me-3">
+                                        <img src="{{ url_for('static', filename='uploads/logos/' + company.company_logo) }}" 
+                                             alt="{{ company.companyname }} Logo" 
+                                             class="img-thumbnail" 
+                                             style="max-height: 40px; max-width: 80px;">
+                                    </div>
+                                    {% endif %}
+                                    <div>{{ company.companyname }}</div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="small">
+                                    {% if company.companyphone %}
+                                    <div><i class="fas fa-phone text-muted me-1"></i> {{ company.companyphone }}</div>
+                                    {% endif %}
+                                    {% if company.companyemail %}
+                                    <div><i class="fas fa-envelope text-muted me-1"></i> {{ company.companyemail }}</div>
+                                    {% endif %}
+                                    {% if company.companyweb %}
+                                    <div><i class="fas fa-globe text-muted me-1"></i> {{ company.companyweb }}</div>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="small">
+                                    {% if company.bankname %}
+                                    <div><i class="fas fa-university text-muted me-1"></i> {{ company.bankname }}</div>
+                                    {% endif %}
+                                    {% if company.companyiban %}
+                                    <div><i class="fas fa-money-check text-muted me-1"></i> {{ company.companyiban }}</div>
+                                    {% endif %}
+                                    <div>
+                                        <span class="badge {% if company.transactiontype == 'S' %}bg-info{% else %}bg-primary{% endif %}">
+                                            {{ 'SEPA' if company.transactiontype == 'S' else 'Direct' if company.transactiontype == 'D' else company.transactiontype }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if company.vatno %}
+                                {{ company.vatno }}
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('company_employees', company_id=company.companyid) }}" 
+                                       class="btn btn-outline-info"
+                                       data-bs-toggle="tooltip"
+                                       title="View Employees">
+                                        <i class="fas fa-users"></i>
+                                    </a>
+                                    <a href="{{ url_for('edit_company_page', company_id=company.companyid) }}" 
+                                       class="btn btn-outline-primary"
+                                       data-bs-toggle="tooltip"
+                                       title="Edit Company">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" 
+                                            class="btn btn-outline-danger" 
+                                            onclick="confirmDeleteCompany({{ company.companyid }}, '{{ company.companyname }}')"
+                                            data-bs-toggle="tooltip"
+                                            title="Delete Company">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-building fa-3x text-muted mb-3"></i>
+                <h5>No Company Record Found</h5>
+                <p class="text-muted mb-3">Please add your company information. Note that only ONE company record is allowed in the system.</p>
+                <a href="{{ url_for('add_company_page') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i> Add Company
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteCompanyModal" tabindex="-1" aria-labelledby="deleteCompanyModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteCompanyModalLabel">
+                    <i class="fas fa-trash-alt text-danger me-1"></i> Confirm Delete
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the company: <strong id="deleteCompanyName"></strong>?</p>
+                <p class="text-danger">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteCompanyForm" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash-alt me-1"></i> Delete Company
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Company Modal -->
+<div class="modal fade" id="addCompanyModal" tabindex="-1" aria-labelledby="addCompanyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addCompanyModalLabel">Add New Company</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('create_company') }}" method="POST">
+                <div class="modal-body">
+                    <!-- General Information -->
+                    <h6 class="mb-3">General Information</h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="companyname" class="form-label">Company Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="companyname" name="companyname" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="vatno" class="form-label">VAT Number</label>
+                            <input type="text" class="form-control" id="vatno" name="vatno">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label for="companyaddress" class="form-label">Address</label>
+                            <textarea class="form-control" id="companyaddress" name="companyaddress" rows="2"></textarea>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="companyphone" class="form-label">Phone</label>
+                            <input type="text" class="form-control" id="companyphone" name="companyphone">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="companyemail" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="companyemail" name="companyemail">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="companyweb" class="form-label">Website</label>
+                            <input type="url" class="form-control" id="companyweb" name="companyweb">
+                        </div>
+                    </div>
+                    
+                    <!-- Banking Information -->
+                    <h6 class="mb-3 mt-4">Banking Information</h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="transactiontype" class="form-label">Transaction Type</label>
+                            <select class="form-select" id="transactiontype" name="transactiontype">
+                                <option value="">Select transaction type</option>
+                                <option value="S">SEPA</option>
+                                <option value="D">Direct</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="companydebitaccount" class="form-label">Debit Account</label>
+                            <input type="text" class="form-control" id="companydebitaccount" name="companydebitaccount">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="companyiban" class="form-label">IBAN</label>
+                            <input type="text" class="form-control" id="companyiban" name="companyiban">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="beneficiary" class="form-label">Beneficiary</label>
+                            <input type="text" class="form-control" id="beneficiary" name="beneficiary">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label for="paymentpolicy" class="form-label">Payment Policy</label>
+                            <textarea class="form-control" id="paymentpolicy" name="paymentpolicy" rows="2"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i> Save Company
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmDeleteCompany(companyId, companyName) {
+    const deleteForm = document.getElementById('deleteCompanyForm');
+    deleteForm.action = `/companies/${companyId}/delete`;
+    document.getElementById('deleteCompanyName').textContent = companyName;
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteCompanyModal'));
+    deleteModal.show();
+}
+
+// Search functionality
+document.getElementById('companySearch').addEventListener('keyup', function() {
+    const searchText = this.value.toLowerCase();
+    const rows = document.querySelectorAll('#companyTableBody tr');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchText) ? '' : 'none';
+    });
+});
+
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function(tooltipEl) {
+        new bootstrap.Tooltip(tooltipEl);
+    });
+});
+</script>
+{% endblock %} 

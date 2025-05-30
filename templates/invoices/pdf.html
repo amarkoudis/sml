@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice {{ invoice.invoice_number }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12pt;
+            line-height: 1.5;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .invoice-header {
+            margin-bottom: 40px;
+        }
+        .company-info {
+            float: left;
+            width: 50%;
+        }
+        .company-logo {
+            max-width: 200px;
+            margin-bottom: 10px;
+        }
+        .invoice-info {
+            float: right;
+            width: 40%;
+            text-align: right;
+        }
+        .invoice-title {
+            font-size: 24pt;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .clearfix:after {
+            content: "";
+            display: table;
+            clear: both;
+        }
+        .client-info {
+            margin-bottom: 40px;
+        }
+        .section-title {
+            font-size: 14pt;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+        th {
+            background-color: #f8f9fa;
+            text-align: left;
+            padding: 10px;
+            border-bottom: 2px solid #ddd;
+        }
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        .amount-col {
+            text-align: right;
+        }
+        .total-row {
+            font-weight: bold;
+        }
+        .invoice-totals {
+            width: 40%;
+            float: right;
+            margin-bottom: 40px;
+        }
+        .invoice-notes {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+        .payment-info {
+            margin-top: 40px;
+        }
+        @media print {
+            .container {
+                padding: 0;
+            }
+            body {
+                font-size: 10pt;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="invoice-header clearfix">
+            <div class="company-info">
+                {% if company and company.logo %}
+                <img src="{{ company.logo }}" alt="{{ company.companyname }}" class="company-logo">
+                {% endif %}
+                <h2>{{ company.companyname if company else 'Company Name' }}</h2>
+                <p>{{ company.companyaddress if company else 'Company Address' }}</p>
+                <p>{{ company.companyphone if company else 'Phone' }}</p>
+                <p>{{ company.companyemail if company else 'Email' }}</p>
+            </div>
+            <div class="invoice-info">
+                <div class="invoice-title">INVOICE</div>
+                <p><strong>Invoice #:</strong> {{ invoice.invoice_number }}</p>
+                <p><strong>Date:</strong> {{ invoice.invoice_date.strftime('%Y-%m-%d') if invoice.invoice_date else '' }}</p>
+                <p><strong>Due Date:</strong> {{ invoice.due_date.strftime('%Y-%m-%d') if invoice.due_date else '' }}</p>
+                <p><strong>Status:</strong> {{ invoice.status }}</p>
+            </div>
+        </div>
+        
+        <div class="client-info clearfix">
+            <div class="section-title">Bill To:</div>
+            <p><strong>{{ invoice.customername }}</strong></p>
+            <p>{{ invoice.customeraddress }}</p>
+            <p>{{ invoice.customerphone }}</p>
+            <p>{{ invoice.customeremail }}</p>
+        </div>
+        
+        {% if invoice.event_name %}
+        <div class="event-info clearfix">
+            <div class="section-title">Event:</div>
+            <p>{{ invoice.event_name }}</p>
+        </div>
+        {% endif %}
+        
+        <div class="section-title">Invoice Items</div>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 50%">Description</th>
+                    <th style="width: 15%">Quantity</th>
+                    <th style="width: 15%">Unit Price</th>
+                    <th style="width: 20%">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td>{{ item.description }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td class="amount-col">€{{ "%.2f"|format(item.unit_price) }}</td>
+                    <td class="amount-col">€{{ "%.2f"|format(item.total) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <div class="invoice-totals">
+            <table>
+                <tr>
+                    <td>Subtotal:</td>
+                    <td class="amount-col">€{{ "%.2f"|format(invoice.subtotal) }}</td>
+                </tr>
+                <tr>
+                    <td>VAT ({{ invoice.vat_rate }}%):</td>
+                    <td class="amount-col">€{{ "%.2f"|format(invoice.vat_amount) }}</td>
+                </tr>
+                <tr class="total-row">
+                    <td>Total:</td>
+                    <td class="amount-col">€{{ "%.2f"|format(invoice.total) }}</td>
+                </tr>
+            </table>
+        </div>
+        
+        {% if invoice.notes %}
+        <div class="invoice-notes">
+            <div class="section-title">Notes</div>
+            <p>{{ invoice.notes }}</p>
+        </div>
+        {% endif %}
+        
+        {% if company and company.bankname %}
+        <div class="payment-info">
+            <div class="section-title">Payment Details</div>
+            <p><strong>Bank:</strong> {{ company.bankname }}</p>
+            <p><strong>Account Number:</strong> {{ company.bankaccount }}</p>
+            <p><strong>IBAN:</strong> {{ company.iban }}</p>
+            <p><strong>SWIFT/BIC:</strong> {{ company.bic }}</p>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html> 

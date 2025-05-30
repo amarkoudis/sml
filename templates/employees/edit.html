@@ -1,0 +1,231 @@
+{% extends 'layout.html' %}
+
+{% block title %}Edit Employee{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h2 class="mb-4">Edit Employee</h2>
+    <form method="POST" action="{{ url_for('edit_employee', employee_id=employee.employeeid) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <label for="transactiontype" class="form-label">Transaction Type</label>
+                <select class="form-select" id="transactiontype" name="transactiontype" required>
+                    <option value="S" {% if employee.transactiontype == 'S' %}selected{% endif %}>S</option>
+                    <option value="B" {% if employee.transactiontype == 'B' %}selected{% endif %}>B</option>
+                </select>
+            </div>
+            <div class="col-md-8">
+                <label for="employeename" class="form-label">Employee Name</label>
+                <input type="text" class="form-control" id="employeename" name="employeename" value="{{ employee.employeename }}" required>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <label for="companyid" class="form-label">Company</label>
+                <select class="form-select" id="companyid" name="companyid" required>
+                    {% for company in companies %}
+                    <option value="{{ company.companyid }}" {% if employee.companyid == company.companyid %}selected{% endif %}>{{ company.companyname }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="bankid" class="form-label">Bank</label>
+                <select class="form-select" id="bankid" name="bankid" required>
+                    {% for bank in banks %}
+                    <option value="{{ bank.bankid }}" {% if employee.bankid == bank.bankid %}selected{% endif %}>{{ bank.bankname }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="swiftno" class="form-label">SWIFT No</label>
+                <input type="text" class="form-control" id="swiftno" name="swiftno" value="{{ employee.swiftno }}" maxlength="11" required>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-3">
+                <label for="currency" class="form-label">Currency</label>
+                <input type="text" class="form-control" id="currency" name="currency" value="{{ employee.currency }}" maxlength="4">
+            </div>
+            <div class="col-md-3">
+                <label for="zipcode" class="form-label">Zip Code</label>
+                <input type="text" class="form-control" id="zipcode" name="zipcode" value="{{ employee.zipcode }}" maxlength="10">
+            </div>
+            <div class="col-md-3">
+                <label for="city" class="form-label">City</label>
+                <select class="form-select" id="city" name="city" required>
+                    {% for city in ['Nicosia','Limassol','Larnaca','Famagusta','Paphos'] %}
+                    <option value="{{ city }}" {% if employee.city == city %}selected{% endif %}>{{ city }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="age" class="form-label">Age</label>
+                <input type="number" class="form-control" id="age" name="age" value="{{ employee.age }}" min="0" required>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="address" class="form-label">Address</label>
+                <input type="text" class="form-control" id="address" name="address" value="{{ employee.address }}" required>
+            </div>
+            <div class="col-md-6">
+                <label for="address2" class="form-label">Address 2</label>
+                <input type="text" class="form-control" id="address2" name="address2" value="{{ employee.address2 }}">
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <label for="gender" class="form-label">Gender</label>
+                <select class="form-select" id="gender" name="gender" required>
+                    <option value="Male" {% if employee.gender == 'Male' %}selected{% endif %}>Male</option>
+                    <option value="Female" {% if employee.gender == 'Female' %}selected{% endif %}>Female</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="tel" class="form-label">Telephone</label>
+                <input type="text" class="form-control" id="tel" name="tel" value="{{ employee.tel }}" maxlength="15">
+            </div>
+            <div class="col-md-4">
+                <label for="nationality" class="form-label">Nationality</label>
+                <select class="form-select" id="nationality" name="nationality" required>
+                    <option value="Cypriot" {% if employee.nationality == 'Cypriot' %}selected{% endif %}>Cypriot</option>
+                    <option value="EU" {% if employee.nationality == 'EU' %}selected{% endif %}>EU</option>
+                    <option value="Foreigner" {% if employee.nationality == 'Foreigner' %}selected{% endif %}>Foreigner</option>
+                </select>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" class="form-control" id="email" name="email" value="{{ employee.email }}" required>
+            </div>
+            <div class="col-md-4">
+                <label for="currentworkplace" class="form-label">Current Workplace</label>
+                <select class="form-select" id="currentworkplace" name="currentworkplace">
+                    <option value="Yes" {% if employee.currentworkplace == 'Yes' %}selected{% endif %}>Yes</option>
+                    <option value="No" {% if employee.currentworkplace == 'No' %}selected{% endif %}>No</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="SocialInsuranceno" class="form-label">Social Insurance No</label>
+                <input type="text" class="form-control" id="SocialInsuranceno" name="SocialInsuranceno" value="{{ employee.SocialInsuranceno }}">
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-2">
+                <label for="Tattoo" class="form-label">Tattoo</label>
+                <select class="form-select" id="Tattoo" name="Tattoo">
+                    <option value="Yes" {% if employee.Tattoo == 'Yes' %}selected{% endif %}>Yes</option>
+                    <option value="No" {% if employee.Tattoo == 'No' %}selected{% endif %}>No</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="AgreementStatus" class="form-label">Agreement Status</label>
+                <select class="form-select" id="AgreementStatus" name="AgreementStatus">
+                    <option value="Yes" {% if employee.AgreementStatus == 'Yes' %}selected{% endif %}>Yes</option>
+                    <option value="No" {% if employee.AgreementStatus == 'No' %}selected{% endif %}>No</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="CriminalRecordStatus" class="form-label">Criminal Record</label>
+                <select class="form-select" id="CriminalRecordStatus" name="CriminalRecordStatus">
+                    <option value="Yes" {% if employee.CriminalRecordStatus == 'Yes' %}selected{% endif %}>Yes</option>
+                    <option value="No" {% if employee.CriminalRecordStatus == 'No' %}selected{% endif %}>No</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="TrainingStatus" class="form-label">Training Status</label>
+                <select class="form-select" id="TrainingStatus" name="TrainingStatus">
+                    <option value="Yes" {% if employee.TrainingStatus == 'Yes' %}selected{% endif %}>Yes</option>
+                    <option value="No" {% if employee.TrainingStatus == 'No' %}selected{% endif %}>No</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="Interestforfulltime" class="form-label">Interest for Full Time</label>
+                <select class="form-select" id="Interestforfulltime" name="Interestforfulltime">
+                    <option value="Yes" {% if employee.Interestforfulltime == 'Yes' %}selected{% endif %}>Yes</option>
+                    <option value="No" {% if employee.Interestforfulltime == 'No' %}selected{% endif %}>No</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="Repeater" class="form-label">Repeater</label>
+                <select class="form-select" id="Repeater" name="Repeater">
+                    <option value="Yes" {% if employee.Repeater == 'Yes' %}selected{% endif %}>Yes</option>
+                    <option value="No" {% if employee.Repeater == 'No' %}selected{% endif %}>No</option>
+                </select>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-3">
+                <label for="costperhour" class="form-label">Cost per Hour</label>
+                <input type="number" step="0.01" class="form-control" id="costperhour" name="costperhour" value="{{ employee.costperhour }}">
+            </div>
+            <div class="col-md-3">
+                <label for="chargeperhour" class="form-label">Charge per Hour</label>
+                <input type="number" step="0.01" class="form-control" id="chargeperhour" name="chargeperhour" value="{{ employee.chargeperhour }}" required>
+            </div>
+            <div class="col-md-3">
+                <label for="status" class="form-label">Status</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="Active" {% if employee.status == 'Active' %}selected{% endif %}>Active</option>
+                    <option value="Inactive" {% if employee.status == 'Inactive' %}selected{% endif %}>Inactive</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="passportid" class="form-label">Passport ID</label>
+                <input type="text" class="form-control" id="passportid" name="passportid" value="{{ employee.passportid }}" required>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="EmploymentAgreement" class="form-label">Employment Agreement</label>
+                <input type="text" class="form-control" id="EmploymentAgreement" name="EmploymentAgreement" value="{{ employee.EmploymentAgreement }}" required>
+            </div>
+            <div class="col-md-3">
+                <label for="employeeidno" class="form-label">Employee ID No</label>
+                <input type="number" class="form-control" id="employeeidno" name="employeeidno" value="{{ employee.employeeidno }}" required>
+            </div>
+            <div class="col-md-3">
+                <label for="employeeroleid" class="form-label">Role</label>
+                <select class="form-select" id="employeeroleid" name="employeeroleid" required>
+                    {% for role in roles %}
+                    <option value="{{ role.employeeroleid }}" {% if employee.employeeroleid == role.employeeroleid %}selected{% endif %}>{{ role.employeerolename }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-3">
+                <label for="employeeenglishrating" class="form-label">English Rating</label>
+                <select class="form-select" id="employeeenglishrating" name="employeeenglishrating" required>
+                    {% for rating in ['1','2','3','4','5'] %}
+                    <option value="{{ rating }}" {% if employee.employeeenglishrating == rating %}selected{% endif %}>{{ rating }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="employeeExperienceRating" class="form-label">Experience Rating</label>
+                <select class="form-select" id="employeeExperienceRating" name="employeeExperienceRating" required>
+                    {% for rating in ['1','2','3','4','5'] %}
+                    <option value="{{ rating }}" {% if employee.employeeExperienceRating == rating %}selected{% endif %}>{{ rating }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="contactmethod" class="form-label">Contact Method</label>
+                <select class="form-select" id="contactmethod" name="contactmethod" required>
+                    <option value="email" {% if employee.contactmethod == 'email' %}selected{% endif %}>Email</option>
+                    <option value="sms" {% if employee.contactmethod == 'sms' %}selected{% endif %}>SMS</option>
+                </select>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-12 text-end">
+                <button type="submit" class="btn btn-primary">Update Employee</button>
+                <a href="{{ url_for('employee_list') }}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %} 

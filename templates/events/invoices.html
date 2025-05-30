@@ -1,0 +1,176 @@
+{% extends "layout.html" %}
+
+{% block head %}
+<style>
+    .clickable-row {
+        cursor: pointer;
+    }
+    .clickable-row:hover {
+        background-color: rgba(0, 123, 255, 0.05) !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page header with actions -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-6 mb-3 mb-md-0">
+                    <h1 class="h3 mb-0">Event Invoices</h1>
+                    <p class="text-muted mt-1">Manage invoices for {{ event.EventName }}</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <a href="{{ url_for('view_event', event_id=event.EventID) }}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left me-1"></i> Back to Event
+                    </a>
+                    <a href="{{ url_for('new_invoice') }}?event_id={{ event.EventID }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i> Create New Invoice
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Event Information Card -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white">
+            <h5 class="card-header-title">Event Details</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="text-muted">Event Name:</label>
+                        <div class="fw-bold">{{ event.EventName }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-muted">Event Location:</label>
+                        <div>{{ event.EventLocation }}</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="text-muted">Customer:</label>
+                        <div>{{ customer.customername }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-muted">Event Date:</label>
+                        <div>{{ event.EventStart.strftime('%d %b %Y, %H:%M') }} - {{ event.EventEnd.strftime('%d %b %Y, %H:%M') }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="mb-0">
+                        <label class="text-muted">Total Hours:</label>
+                        <div class="fw-bold">{{ event.totalhours|format_hours }}</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-0">
+                        <label class="text-muted">Total Cost:</label>
+                        <div>€{{ "%.2f"|format(event.totalcost) }}</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-0">
+                        <label class="text-muted">Total Revenue:</label>
+                        <div class="fw-bold text-success">€{{ "%.2f"|format(event.totalselling) }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invoices Card -->
+    <div class="modern-card">
+        <div class="card-header bg-white">
+            <h5 class="card-header-title">Invoices</h5>
+        </div>
+        <div class="card-body p-0">
+            {% if invoices %}
+            <div class="table-responsive">
+                <table class="table modern-table table-hover table-striped mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Invoice #</th>
+                            <th>Date</th>
+                            <th>Due Date</th>
+                            <th>Status</th>
+                            <th>Total</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for invoice in invoices %}
+                        <tr class="clickable-row" data-href="{{ url_for('invoice_view', invoice_id=invoice.invoice_id) }}">
+                            <td class="fw-semibold">{{ invoice.invoice_number }}</td>
+                            <td>{{ invoice.invoice_date.strftime('%d %b %Y') }}</td>
+                            <td>{{ invoice.due_date.strftime('%d %b %Y') if invoice.due_date else '-' }}</td>
+                            <td>
+                                <span class="badge {% if invoice.status == 'Paid' %}bg-success{% elif invoice.status == 'Draft' %}bg-secondary{% elif invoice.status == 'Overdue' %}bg-danger{% else %}bg-warning{% endif %}">
+                                    {{ invoice.status }}
+                                </span>
+                            </td>
+                            <td class="fw-bold">€{{ "%.2f"|format(invoice.total) }}</td>
+                            <td class="text-end" onclick="event.stopPropagation();">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('invoice_view', invoice_id=invoice.invoice_id) }}" 
+                                       class="btn btn-outline-primary"
+                                       data-bs-toggle="tooltip"
+                                       title="View Invoice">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('invoice_edit', invoice_id=invoice.invoice_id) }}" 
+                                       class="btn btn-outline-primary"
+                                       data-bs-toggle="tooltip"
+                                       title="Edit Invoice">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{{ url_for('invoice_pdf', invoice_id=invoice.invoice_id) }}" 
+                                       class="btn btn-outline-secondary"
+                                       data-bs-toggle="tooltip"
+                                       title="Download PDF" 
+                                       target="_blank">
+                                        <i class="fas fa-file-pdf"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-file-invoice-dollar fa-3x text-muted mb-3"></i>
+                <h5>No Invoices Found</h5>
+                <p class="text-muted mb-3">This event does not have any invoices yet.</p>
+                <a href="{{ url_for('new_invoice') }}?event_id={{ event.EventID }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i> Create Invoice
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function(tooltipEl) {
+        new bootstrap.Tooltip(tooltipEl);
+    });
+    
+    // Make table rows clickable
+    const clickableRows = document.querySelectorAll('.clickable-row');
+    clickableRows.forEach(row => {
+        row.addEventListener('click', function() {
+            window.location.href = this.dataset.href;
+        });
+    });
+});
+</script>
+{% endblock %} 

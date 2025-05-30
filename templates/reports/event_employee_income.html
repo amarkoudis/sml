@@ -1,0 +1,388 @@
+{% extends "layout.html" %}
+
+{% block title %}Event Income Per Employee Report{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page header with actions -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-6 mb-3 mb-md-0">
+                    <h1 class="h3 mb-0">Event Income Per Employee Report</h1>
+                    <p class="text-muted mt-1">View employee earnings grouped by event and employee</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <button type="button" class="btn btn-success" id="export-excel">
+                        <i class="fas fa-file-excel me-1"></i> Export to Excel
+                    </button>
+                    <button type="button" class="btn btn-danger" id="export-pdf">
+                        <i class="fas fa-file-pdf me-1"></i> Export to PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="card shadow mb-4">
+        <div class="card-header bg-white">
+            <h5 class="card-header-title">Filters</h5>
+        </div>
+        <div class="card-body">
+            <form id="filter-form" method="GET" action="{{ url_for('event_employee_income_report') }}">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="date_from" class="form-label">From Date</label>
+                            <input type="date" class="form-control" id="date_from" name="date_from"
+                                  value="{{ date_from }}">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="date_to" class="form-label">To Date</label>
+                            <input type="date" class="form-control" id="date_to" name="date_to"
+                                  value="{{ date_to }}">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="event_id" class="form-label">Event</label>
+                            <select class="form-select" id="event_id" name="event_id">
+                                <option value="">All Events</option>
+                                {% for event in events_list %}
+                                <option value="{{ event.EventID }}" {% if selected_event_id == event.EventID|string %}selected{% endif %}>
+                                    {{ event.EventName }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-3">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-filter me-1"></i> Apply Filters
+                    </button>
+                    <a href="{{ url_for('event_employee_income_report') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-undo me-1"></i> Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Current Rates Box -->
+    <div class="alert alert-info mb-4">
+        <div class="d-flex align-items-center">
+            <div>
+                <h5 class="alert-heading mb-1">Current Contribution Rates</h5>
+                <p class="mb-0">
+                    <span class="fw-bold">Social:</span> Employee {{ contribution_rates.social_employee }}%, Employer {{ contribution_rates.social_employer }}% | 
+                    <span class="fw-bold">GESY:</span> Employee {{ contribution_rates.gesy_employee }}%, Employer {{ contribution_rates.gesy_employer }}% | 
+                    <span class="fw-bold">Social Cohesion:</span> Employer {{ contribution_rates.cohesion_employer }}% | 
+                    <span class="fw-bold">Redundancy:</span> Employer {{ contribution_rates.redundancy_employer }}% | 
+                    <span class="fw-bold">Industrial:</span> Employer {{ contribution_rates.industrial_employer }}%
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results -->
+    {% if events_data %}
+        {% for event_id, event in events_data.items() %}
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Event: {{ event.name }}</h5>
+                    <p class="small text-white mb-0">{{ event.date }}</p>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table modern-table table-bordered table-hover event-table align-middle">
+                            <thead>
+                                <tr class="bg-light">
+                                    <th rowspan="2">Employee</th>
+                                    <th rowspan="2">Position</th>
+                                    <th rowspan="2">Shifts</th>
+                                    <th rowspan="2">Total Hours</th>
+                                    <th rowspan="2">Rate (€)</th>
+                                    <th rowspan="2">Gross Pay (€)</th>
+                                    <th colspan="3" class="text-center bg-info-subtle">Employee Contributions</th>
+                                    <th rowspan="2" class="bg-info-subtle">Net Pay (€)</th>
+                                    <th colspan="4" class="text-center bg-warning-subtle">Employer Contributions</th>
+                                    <th rowspan="2">Total Cost (€)</th>
+                                </tr>
+                                <tr class="bg-light">
+                                    <!-- Employee Contribution sub-header -->
+                                    <th class="bg-info-subtle">Social (€)</th>
+                                    <th class="bg-info-subtle">GESY (€)</th>
+                                    <th class="bg-info-subtle">Total (€)</th>
+                                    
+                                    <!-- Employer Contribution sub-header -->
+                                    <th class="bg-warning-subtle">Social (€)</th>
+                                    <th class="bg-warning-subtle">GESY (€)</th>
+                                    <th class="bg-warning-subtle">Funds (€)</th>
+                                    <th class="bg-warning-subtle">Total (€)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for employee in event.employees %}
+                                <tr>
+                                    <td>{{ employee.name }}</td>
+                                    <td>{{ employee.position }}</td>
+                                    <td>
+                                        <ul class="list-unstyled mb-0 small">
+                                            {% for shift in employee.shifts %}
+                                            <li><i class="fas fa-clock text-muted me-1"></i> {{ shift.name }} ({{ shift.time }})</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </td>
+                                    <td>{{ "%.2f"|format(employee.total_hours) }}</td>
+                                    <td>{{ "%.2f"|format(employee.hourly_rate) }}</td>
+                                    <td>{{ "%.2f"|format(employee.gross_pay) }}</td>
+                                    
+                                    <!-- Employee Contributions -->
+                                    <td class="bg-info-subtle">{{ "%.2f"|format(employee.social_employee) }}</td>
+                                    <td class="bg-info-subtle">{{ "%.2f"|format(employee.gesy_employee) }}</td>
+                                    <td class="bg-info-subtle">{{ "%.2f"|format(employee.total_employee_contribution) }}</td>
+                                    <td class="bg-info-subtle">{{ "%.2f"|format(employee.net_pay) }}</td>
+                                    
+                                    <!-- Employer Contributions -->
+                                    <td class="bg-warning-subtle">{{ "%.2f"|format(employee.social_employer) }}</td>
+                                    <td class="bg-warning-subtle">{{ "%.2f"|format(employee.gesy_employer) }}</td>
+                                    <td class="bg-warning-subtle">{{ "%.2f"|format(employee.cohesion_employer + employee.redundancy_employer + employee.industrial_employer) }}</td>
+                                    <td class="bg-warning-subtle">{{ "%.2f"|format(employee.total_employer_contribution) }}</td>
+                                    
+                                    <!-- Total Cost -->
+                                    <td>{{ "%.2f"|format(employee.gross_pay + employee.total_employer_contribution) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr class="fw-bold table-light">
+                                    <td colspan="3">Event Total</td>
+                                    <td>{{ "%.2f"|format(event.total_hours) }}</td>
+                                    <td></td>
+                                    <td>{{ "%.2f"|format(event.total_gross) }}</td>
+                                    
+                                    <!-- Employee Contributions Totals -->
+                                    <td class="bg-info-subtle">{{ "%.2f"|format(event.total_social_employee) }}</td>
+                                    <td class="bg-info-subtle">{{ "%.2f"|format(event.total_gesy_employee) }}</td>
+                                    <td class="bg-info-subtle">{{ "%.2f"|format(event.total_employee_contribution) }}</td>
+                                    <td class="bg-info-subtle">{{ "%.2f"|format(event.total_net) }}</td>
+                                    
+                                    <!-- Employer Contributions Totals -->
+                                    <td class="bg-warning-subtle">{{ "%.2f"|format(event.total_social_employer) }}</td>
+                                    <td class="bg-warning-subtle">{{ "%.2f"|format(event.total_gesy_employer) }}</td>
+                                    <td class="bg-warning-subtle">{{ "%.2f"|format(event.total_other_funds) }}</td>
+                                    <td class="bg-warning-subtle">{{ "%.2f"|format(event.total_employer_contribution) }}</td>
+                                    
+                                    <!-- Total Cost -->
+                                    <td>{{ "%.2f"|format(event.total_gross + event.total_employer_contribution) }}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+        
+        <!-- Grand Total -->
+        <div class="card shadow">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">Grand Total (All Events)</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr class="bg-secondary">
+                                <th colspan="2" class="text-center text-white">Earnings</th>
+                                <th colspan="2" class="text-center bg-info-subtle text-dark">Employee Contributions</th>
+                                <th colspan="2" class="text-center bg-warning-subtle text-dark">Employer Contributions</th>
+                                <th class="text-center text-white">Total</th>
+                            </tr>
+                            <tr>
+                                <th>Total Hours</th>
+                                <th>Gross Pay (€)</th>
+                                <th class="bg-info-subtle">Total Contributions (€)</th>
+                                <th class="bg-info-subtle">Net Pay (€)</th>
+                                <th class="bg-warning-subtle">Total Contributions (€)</th>
+                                <th class="bg-warning-subtle">Funds (€)</th>
+                                <th>Total Cost (€)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="fw-bold fs-5">
+                                <td>{{ "%.2f"|format(total_summary.total_hours) }}</td>
+                                <td>{{ "%.2f"|format(total_summary.total_gross) }}</td>
+                                <td class="bg-info-subtle">{{ "%.2f"|format(total_summary.total_employee_contribution) }}</td>
+                                <td class="bg-info-subtle">{{ "%.2f"|format(total_summary.total_net) }}</td>
+                                <td class="bg-warning-subtle">{{ "%.2f"|format(total_summary.total_employer_contribution) }}</td>
+                                <td class="bg-warning-subtle">{{ "%.2f"|format(total_summary.total_funds) }}</td>
+                                <td>{{ "%.2f"|format(total_summary.total_gross + total_summary.total_employer_contribution) }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="card shadow">
+            <div class="card-body text-center py-5">
+                <div class="mb-3">
+                    <i class="fas fa-search fa-3x text-muted"></i>
+                </div>
+                <h5 class="text-muted">No Records Found</h5>
+                <p class="text-muted mb-0">Try adjusting your filters or select a different date range</p>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+<script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
+<script src="https://unpkg.com/jspdf-autotable@latest"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Export to Excel
+    document.getElementById('export-excel').addEventListener('click', function() {
+        // Create a new workbook
+        const wb = XLSX.utils.book_new();
+        
+        // Get all event tables
+        const tables = document.querySelectorAll('.event-table');
+        
+        tables.forEach((table, index) => {
+            // Get the event name from the header
+            const eventName = table.closest('.card').querySelector('.card-header h5').textContent.replace('Event: ', '');
+            
+            // Create worksheet from table
+            const ws = XLSX.utils.table_to_sheet(table);
+            
+            // Add worksheet to workbook
+            XLSX.utils.book_append_sheet(wb, ws, `${eventName.substring(0, 30)}`);
+        });
+        
+        // Add a summary sheet
+        const summaryTable = document.querySelector('.card:last-child table');
+        if (summaryTable) {
+            const summaryWs = XLSX.utils.table_to_sheet(summaryTable);
+            XLSX.utils.book_append_sheet(wb, summaryWs, 'Summary');
+        }
+        
+        // Write to file
+        XLSX.writeFile(wb, 'Event_Employee_Income_Report.xlsx');
+    });
+    
+    // Export to PDF
+    document.getElementById('export-pdf').addEventListener('click', function() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('l', 'pt', 'a3'); // Using A3 for wider table
+        
+        // Add title
+        doc.setFontSize(18);
+        doc.text('Event Income Per Employee Report', 40, 40);
+        
+        // Get current date for report header
+        const today = new Date();
+        const dateStr = today.toLocaleDateString();
+        doc.setFontSize(12);
+        doc.text(`Generated on: ${dateStr}`, 40, 60);
+        
+        // Add dates to report header
+        const dateFrom = document.getElementById('date_from').value;
+        const dateTo = document.getElementById('date_to').value;
+        doc.text(`Report Period: ${dateFrom} to ${dateTo}`, 40, 80);
+        
+        let yPos = 100;
+        
+        // Get all event cards
+        const eventCards = document.querySelectorAll('.card.shadow:not(:last-child)');
+        
+        eventCards.forEach((eventCard, index) => {
+            // Get event name
+            const eventName = eventCard.querySelector('.card-header h5').textContent;
+            
+            // Add event header
+            if (index > 0) yPos += 30;
+            doc.setFontSize(14);
+            doc.setTextColor(0, 51, 153);
+            doc.text(eventName, 40, yPos);
+            yPos += 20;
+            
+            // Add table
+            const table = eventCard.querySelector('table');
+            doc.autoTable({
+                html: table,
+                startY: yPos,
+                theme: 'grid',
+                headStyles: {
+                    fillColor: [41, 128, 185],
+                    textColor: 255,
+                    fontSize: 8
+                },
+                bodyStyles: {
+                    fontSize: 8
+                },
+                footStyles: {
+                    fillColor: [233, 236, 239],
+                    textColor: 0,
+                    fontStyle: 'bold',
+                    fontSize: 8
+                },
+                alternateRowStyles: {
+                    fillColor: [245, 245, 245]
+                },
+                margin: { right: 15, left: 15 },
+                styles: { overflow: 'linebreak' },
+            });
+            
+            yPos = doc.lastAutoTable.finalY + 20;
+            
+            // Check if we need a new page
+            if (yPos > doc.internal.pageSize.height - 100) {
+                doc.addPage();
+                yPos = 40;
+            }
+            
+            // Add page break between events
+            if (index < eventCards.length - 1) {
+                doc.addPage();
+                yPos = 40;
+            }
+        });
+        
+        // Add grand total on the last page
+        doc.addPage();
+        doc.setFontSize(16);
+        doc.setTextColor(0, 0, 0);
+        doc.text('Grand Total Summary (All Events)', 40, 40);
+        
+        const grandTotalTable = document.querySelector('.card:last-child table');
+        if (grandTotalTable) {
+            doc.autoTable({
+                html: grandTotalTable,
+                startY: 60,
+                theme: 'grid',
+                headStyles: {
+                    fillColor: [0, 0, 0],
+                    textColor: 255,
+                    fontSize: 10
+                },
+                bodyStyles: {
+                    fontSize: 10,
+                    fontStyle: 'bold'
+                },
+                margin: { right: 15, left: 15 },
+            });
+        }
+        
+        doc.save('Event_Employee_Income_Report.pdf');
+    });
+});
+</script>
+{% endblock %} 

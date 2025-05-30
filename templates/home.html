@@ -1,0 +1,698 @@
+{% extends "layout.html" %}
+
+{% block head %}
+<style>
+    .clickable-row {
+        cursor: pointer;
+    }
+    .clickable-row:hover {
+        background-color: rgba(0, 123, 255, 0.05) !important;
+    }
+    
+    /* Predefine progress bar classes for different percentages */
+    .progress-width-0 { width: 0%; }
+    .progress-width-10 { width: 10%; }
+    .progress-width-20 { width: 20%; }
+    .progress-width-30 { width: 30%; }
+    .progress-width-40 { width: 40%; }
+    .progress-width-50 { width: 50%; }
+    .progress-width-60 { width: 60%; }
+    .progress-width-70 { width: 70%; }
+    .progress-width-80 { width: 80%; }
+    .progress-width-90 { width: 90%; }
+    .progress-width-100 { width: 100%; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="container-fluid">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="row align-items-center mb-4">
+                <div class="col">
+                    <h1 class="page-header-title">
+                        <i class="fas fa-home text-primary"></i>
+                        Dashboard
+                    </h1>
+                    <p class="page-header-subtitle">Welcome to SML Event Management System</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Cards Row -->
+        <div class="row">
+            <!-- Events Card -->
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-primary h-100">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                    Total Events</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_events }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customers Card -->
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-success h-100">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                    Total Customers</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_customers }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-users fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Employees Card -->
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-info h-100">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                    Total Employees</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_employees }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-user-tie fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Invoices Card -->
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-warning h-100">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                    Total Invoices</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_invoices }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-file-invoice-dollar fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Financial Summary Row -->
+        <div class="row mb-4">
+            <div class="col-lg-6">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="card-title">Past 3 Months Performance</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table modern-table table-bordered align-middle">
+                                <tbody>
+                                    <tr>
+                                        <th>Total Events</th>
+                                        <td>{{ past_financial.total_events }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Total Cost</th>
+                                        <td>€{{ "%.2f"|format(past_financial.total_cost) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Total Revenue</th>
+                                        <td class="text-success">€{{ "%.2f"|format(past_financial.total_selling) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Total Profit</th>
+                                        <td class="{% if past_financial.total_profit > 0 %}text-success{% else %}text-danger{% endif %}">
+                                            €{{ "%.2f"|format(past_financial.total_profit) }}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Profit Margin</th>
+                                        <td>
+                                            {% if past_financial.total_selling > 0 %}
+                                                {{ "%.1f"|format((past_financial.total_profit / past_financial.total_selling) * 100) }}%
+                                            {% else %}
+                                                0%
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-6">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="card-title">Upcoming Financials</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table modern-table table-bordered align-middle">
+                                <tbody>
+                                    <tr>
+                                        <th>Upcoming Events</th>
+                                        <td>{{ upcoming_financial.total_events }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Projected Cost</th>
+                                        <td>€{{ "%.2f"|format(upcoming_financial.total_cost) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Projected Revenue</th>
+                                        <td class="text-success">€{{ "%.2f"|format(upcoming_financial.total_selling) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Projected Profit</th>
+                                        <td class="{% if upcoming_financial.total_profit > 0 %}text-success{% else %}text-danger{% endif %}">
+                                            €{{ "%.2f"|format(upcoming_financial.total_profit) }}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Projected Margin</th>
+                                        <td>
+                                            {% if upcoming_financial.total_selling > 0 %}
+                                                {{ "%.1f"|format((upcoming_financial.total_profit / upcoming_financial.total_selling) * 100) }}%
+                                            {% else %}
+                                                0%
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Invoice Statistics -->
+            <div class="col-lg-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <h5 class="card-title">Invoice Statistics</h5>
+                            </div>
+                            <div class="col-auto">
+                                <a href="{{ url_for('invoice_list') }}" class="btn btn-sm btn-primary">View All</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        {% if invoice_stats %}
+                        <div class="row mb-2">
+                            <div class="col-md-6">
+                                <div class="small text-muted mb-1">Invoice Status</div>
+                                <div class="d-flex align-items-center mb-2">
+                                    <div style="min-width: 120px;">Draft</div>
+                                    <div class="progress flex-grow-1" style="height: 10px;">
+                                        {% set draft_pct = (invoice_stats.draft / invoice_stats.total * 100) if invoice_stats.total > 0 else 0 %}
+                                        <div class="progress-bar bg-warning" role="progressbar" style="width: {{ draft_pct }}%"></div>
+                                    </div>
+                                    <div class="ms-2">{{ invoice_stats.draft }} / {{ invoice_stats.total }}</div>
+                                </div>
+                                <div class="d-flex align-items-center mb-2">
+                                    <div style="min-width: 120px;">Sent</div>
+                                    <div class="progress flex-grow-1" style="height: 10px;">
+                                        {% set sent_pct = (invoice_stats.sent / invoice_stats.total * 100) if invoice_stats.total > 0 else 0 %}
+                                        <div class="progress-bar bg-info" role="progressbar" style="width: {{ sent_pct }}%"></div>
+                                    </div>
+                                    <div class="ms-2">{{ invoice_stats.sent }} / {{ invoice_stats.total }}</div>
+                                </div>
+                                <div class="d-flex align-items-center mb-2">
+                                    <div style="min-width: 120px;">Paid</div>
+                                    <div class="progress flex-grow-1" style="height: 10px;">
+                                        {% set paid_pct = (invoice_stats.paid / invoice_stats.total * 100) if invoice_stats.total > 0 else 0 %}
+                                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ paid_pct }}%"></div>
+                                    </div>
+                                    <div class="ms-2">{{ invoice_stats.paid }} / {{ invoice_stats.total }}</div>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <div style="min-width: 120px;">Cancelled</div>
+                                    <div class="progress flex-grow-1" style="height: 10px;">
+                                        {% set cancelled_pct = (invoice_stats.cancelled / invoice_stats.total * 100) if invoice_stats.total > 0 else 0 %}
+                                        <div class="progress-bar bg-danger" role="progressbar" style="width: {{ cancelled_pct }}%"></div>
+                                    </div>
+                                    <div class="ms-2">{{ invoice_stats.cancelled }} / {{ invoice_stats.total }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="small text-muted mb-1">Payment Status</div>
+                                <div class="h4 font-weight-bold">€{{ "%.2f"|format(invoice_stats.total_value) }}</div>
+                                <p class="text-muted">Total Invoice Value</p>
+                                
+                                <div class="h4 font-weight-bold text-success">€{{ "%.2f"|format(invoice_stats.paid_value) }}</div>
+                                <p class="text-muted">Collected Payments</p>
+                                
+                                <div class="h4 font-weight-bold text-warning">€{{ "%.2f"|format(invoice_stats.total_value - invoice_stats.paid_value) }}</div>
+                                <p class="text-muted">Outstanding Balance</p>
+                            </div>
+                        </div>
+                        {% else %}
+                        <p class="text-center text-muted">No invoice data available.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Event Status -->
+            <div class="col-lg-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <h5 class="card-title">Event Status</h5>
+                            </div>
+                            <div class="col-auto">
+                                <a href="{{ url_for('event_list') }}" class="btn btn-sm btn-primary">View All</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        {% if event_status %}
+                            <div class="row mb-4">
+                                <div class="col-md-8 offset-md-2">
+                                    <div class="chart-container" style="height: 200px;">
+                                        <canvas id="eventStatusChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table modern-table table-bordered align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Status</th>
+                                            <th>Count</th>
+                                            <th>Percentage</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% set total_events = event_status|sum(attribute='count') %}
+                                        {% for status in event_status %}
+                                        <tr>
+                                            <td>{{ status.status }}</td>
+                                            <td>{{ status.count }}</td>
+                                            <td>{{ "%.1f"|format((status.count / total_events * 100) if total_events > 0 else 0) }}%</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p class="text-center text-muted">No event status data available.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Recent Events Card -->
+            <div class="col-lg-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <h5 class="card-title">Recent Events</h5>
+                            </div>
+                            <div class="col-auto">
+                                <a href="{{ url_for('event_list') }}" class="btn btn-sm btn-primary">View All</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        {% if recent_events %}
+                            <div class="table-responsive">
+                                <table class="table modern-table table-bordered align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Event Name</th>
+                                            <th>Customer</th>
+                                            <th>Date</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for event in recent_events %}
+                                        <tr>
+                                            <td>
+                                                <a href="{{ url_for('view_event', event_id=event.EventID) }}">
+                                                    {{ event.EventName }}
+                                                </a>
+                                            </td>
+                                            <td>{{ event.customername }}</td>
+                                            <td>{% if event.EventStart %}{{ event.EventStart.strftime('%d/%m/%Y') }}{% else %}N/A{% endif %}</td>
+                                            <td>
+                                                <span class="badge 
+                                                    {% if event.Status == 'Completed' %}bg-success
+                                                    {% elif event.Status == 'Confirmed' %}bg-primary
+                                                    {% elif event.Status == 'Cancelled' %}bg-danger
+                                                    {% else %}bg-secondary{% endif %}">
+                                                    {{ event.Status }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p class="text-center text-muted">No recent events found.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Invoices -->
+            <div class="col-lg-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <h5 class="card-title">Recent Invoices</h5>
+                            </div>
+                            <div class="col-auto">
+                                <a href="{{ url_for('invoice_list') }}" class="btn btn-sm btn-primary">View All</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        {% if recent_invoices %}
+                            <div class="table-responsive">
+                                <table class="table modern-table table-bordered align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Invoice #</th>
+                                            <th>Customer</th>
+                                            <th>Date</th>
+                                            <th>Amount</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for invoice in recent_invoices %}
+                                        <tr class="clickable-row" data-href="{{ url_for('invoice_view', invoice_id=invoice.invoice_id) }}">
+                                            <td>{{ invoice.invoice_number }}</td>
+                                            <td>{{ invoice.customername }}</td>
+                                            <td>{{ invoice.invoice_date_formatted }}</td>
+                                            <td>€{{ "%.2f"|format(invoice.total) }}</td>
+                                            <td>
+                                                <span class="badge 
+                                                    {% if invoice.status == 'Paid' %}bg-success
+                                                    {% elif invoice.status == 'Sent' %}bg-primary
+                                                    {% elif invoice.status == 'Draft' %}bg-warning
+                                                    {% elif invoice.status == 'Cancelled' %}bg-danger
+                                                    {% else %}bg-secondary{% endif %}">
+                                                    {{ invoice.status }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p class="text-center text-muted">No recent invoices found.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Upcoming Events Card -->
+            <div class="col-lg-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <h5 class="card-title">Upcoming Events</h5>
+                            </div>
+                            <div class="col-auto">
+                                <a href="{{ url_for('event_list') }}" class="btn btn-sm btn-primary">View All</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        {% if upcoming_events %}
+                            <div class="table-responsive">
+                                <table class="table modern-table table-bordered align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Event Name</th>
+                                            <th>Customer</th>
+                                            <th>Date</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for event in upcoming_events %}
+                                        <tr>
+                                            <td>
+                                                <a href="{{ url_for('view_event', event_id=event.EventID) }}">
+                                                    {{ event.EventName }}
+                                                </a>
+                                            </td>
+                                            <td>{{ event.customername }}</td>
+                                            <td>{% if event.EventStart %}{{ event.EventStart.strftime('%d/%m/%Y') }}{% else %}N/A{% endif %}</td>
+                                            <td>
+                                                <span class="badge 
+                                                    {% if event.Status == 'Completed' %}bg-success
+                                                    {% elif event.Status == 'Confirmed' %}bg-primary
+                                                    {% elif event.Status == 'Cancelled' %}bg-danger
+                                                    {% else %}bg-secondary{% endif %}">
+                                                    {{ event.Status }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p class="text-center text-muted">No upcoming events found.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Employee Roles Distribution -->
+            <div class="col-lg-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <h5 class="card-title">Employee Roles Distribution</h5>
+                            </div>
+                            <div class="col-auto">
+                                <a href="{{ url_for('employee_list') }}" class="btn btn-sm btn-primary">View Employees</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        {% if employee_roles %}
+                            <div class="row mb-4">
+                                <div class="col-md-8 offset-md-2">
+                                    <div class="chart-container" style="height: 200px;">
+                                        <canvas id="employeeRolesChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table modern-table table-bordered align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Role</th>
+                                            <th>Count</th>
+                                            <th>Percentage</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% set total_employees = employee_roles|sum(attribute='count') %}
+                                        {% for role in employee_roles %}
+                                        <tr>
+                                            <td>{{ role.role }}</td>
+                                            <td>{{ role.count }}</td>
+                                            <td>{{ "%.1f"|format((role.count / total_employees * 100) if total_employees > 0 else 0) }}%</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p class="text-center text-muted">No employee role data available.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Make invoice rows clickable
+    const clickableRows = document.querySelectorAll('.clickable-row');
+    clickableRows.forEach(row => {
+        row.addEventListener('click', function() {
+            window.location.href = this.dataset.href;
+        });
+    });
+
+    // Event Status Chart
+    if (document.getElementById('eventStatusChart')) {
+        const eventStatusCtx = document.getElementById('eventStatusChart').getContext('2d');
+        const statusLabels = [];
+        const statusData = [];
+        
+        {% if event_status %}
+            {% for status in event_status %}
+                statusLabels.push('{{ status.status }}');
+                statusData.push({{ status.count }});
+            {% endfor %}
+        {% endif %}
+        
+        const eventStatusData = {
+            labels: statusLabels,
+            datasets: [{
+                data: statusData,
+                backgroundColor: [
+                    '#4e73df',
+                    '#1cc88a',
+                    '#36b9cc',
+                    '#f6c23e',
+                    '#e74a3b',
+                    '#858796'
+                ],
+                hoverBackgroundColor: [
+                    '#2e59d9',
+                    '#17a673',
+                    '#2c9faf',
+                    '#dda20a',
+                    '#be2617',
+                    '#6e707e'
+                ],
+                hoverBorderColor: "rgba(234, 236, 244, 1)",
+            }]
+        };
+        
+        new Chart(eventStatusCtx, {
+            type: 'doughnut',
+            data: eventStatusData,
+            options: {
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const value = context.raw;
+                                const percentage = Math.round((value / total) * 100);
+                                return `${context.label}: ${value} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Employee Roles Chart
+    if (document.getElementById('employeeRolesChart')) {
+        const employeeRolesCtx = document.getElementById('employeeRolesChart').getContext('2d');
+        const roleLabels = [];
+        const roleData = [];
+        
+        {% if employee_roles %}
+            {% for role in employee_roles %}
+                roleLabels.push('{{ role.role }}');
+                roleData.push({{ role.count }});
+            {% endfor %}
+        {% endif %}
+        
+        const employeeRolesData = {
+            labels: roleLabels,
+            datasets: [{
+                data: roleData,
+                backgroundColor: [
+                    '#4e73df',
+                    '#1cc88a',
+                    '#36b9cc',
+                    '#f6c23e',
+                    '#e74a3b',
+                    '#858796',
+                    '#5a5c69',
+                    '#4c51bf',
+                    '#6875f5'
+                ],
+                hoverBackgroundColor: [
+                    '#2e59d9',
+                    '#17a673',
+                    '#2c9faf',
+                    '#dda20a',
+                    '#be2617',
+                    '#6e707e',
+                    '#484a54',
+                    '#3f42a0',
+                    '#505cd0'
+                ],
+                hoverBorderColor: "rgba(234, 236, 244, 1)",
+            }]
+        };
+        
+        new Chart(employeeRolesCtx, {
+            type: 'doughnut',
+            data: employeeRolesData,
+            options: {
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const value = context.raw;
+                                const percentage = Math.round((value / total) * 100);
+                                return `${context.label}: ${value} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

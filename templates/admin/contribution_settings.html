@@ -1,0 +1,315 @@
+{% extends "layout.html" %}
+
+{% block title %}Social Contribution Settings{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page header with actions -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-6 mb-3 mb-md-0">
+                    <h1 class="h3 mb-0">Social Contribution Settings</h1>
+                    <p class="text-muted mt-1">Manage detailed contribution percentages for employees and employers</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <button type="button" class="btn btn-primary save-all-settings">
+                        <i class="fas fa-save me-1"></i> Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Card -->
+    <div class="card shadow">
+        <div class="card-body">
+            <form id="contribution-settings-form" method="POST" action="{{ url_for('update_contribution_settings') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Contribution Type</th>
+                                <th>Employee Contribution (%)</th>
+                                <th>Employer Contribution (%)</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Social Contributions -->
+                            <tr>
+                                <td>
+                                    <div class="fw-bold">Social</div>
+                                </td>
+                                <td>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="social_employee" 
+                                               name="social_employee" min="0" max="100" step="0.01" 
+                                               value="{{ contribution_settings.social_employee|default(8.80) }}">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="social_employer" 
+                                               name="social_employer" min="0" max="100" step="0.01" 
+                                               value="{{ contribution_settings.social_employer|default(8.80) }}">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <small class="form-text text-muted">Social insurance contributions</small>
+                                </td>
+                            </tr>
+                            
+                            <!-- GESY Contributions -->
+                            <tr>
+                                <td>
+                                    <div class="fw-bold">Gesy</div>
+                                </td>
+                                <td>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="gesy_employee" 
+                                               name="gesy_employee" min="0" max="100" step="0.01" 
+                                               value="{{ contribution_settings.gesy_employee|default(2.65) }}">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="gesy_employer" 
+                                               name="gesy_employer" min="0" max="100" step="0.01" 
+                                               value="{{ contribution_settings.gesy_employer|default(2.90) }}">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <small class="form-text text-muted">National Health Insurance Scheme</small>
+                                </td>
+                            </tr>
+                            
+                            <!-- Social Cohesion Fund -->
+                            <tr>
+                                <td>
+                                    <div class="fw-bold">Social Cohesion Fund</div>
+                                </td>
+                                <td>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="cohesion_employee" 
+                                               name="cohesion_employee" min="0" max="100" step="0.01" 
+                                               value="{{ contribution_settings.cohesion_employee|default(0) }}" readonly>
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="cohesion_employer" 
+                                               name="cohesion_employer" min="0" max="100" step="0.01" 
+                                               value="{{ contribution_settings.cohesion_employer|default(2.0) }}">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <small class="form-text text-muted">Paid only by employer</small>
+                                </td>
+                            </tr>
+                            
+                            <!-- Redundancy Fund -->
+                            <tr>
+                                <td>
+                                    <div class="fw-bold">Redundancy Fund</div>
+                                </td>
+                                <td>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="redundancy_employee" 
+                                               name="redundancy_employee" min="0" max="100" step="0.01" 
+                                               value="{{ contribution_settings.redundancy_employee|default(0) }}" readonly>
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="redundancy_employer" 
+                                               name="redundancy_employer" min="0" max="100" step="0.01" 
+                                               value="{{ contribution_settings.redundancy_employer|default(1.2) }}">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <small class="form-text text-muted">Paid only by employer</small>
+                                </td>
+                            </tr>
+                            
+                            <!-- Industrial Fund -->
+                            <tr>
+                                <td>
+                                    <div class="fw-bold">Industrial Fund</div>
+                                </td>
+                                <td>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="industrial_employee" 
+                                               name="industrial_employee" min="0" max="100" step="0.01" 
+                                               value="{{ contribution_settings.industrial_employee|default(0) }}" readonly>
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="industrial_employer" 
+                                               name="industrial_employer" min="0" max="100" step="0.01" 
+                                               value="{{ contribution_settings.industrial_employer|default(0.05) }}">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <small class="form-text text-muted">Paid only by employer</small>
+                                </td>
+                            </tr>
+                            
+                            <!-- Total Row -->
+                            <tr class="table-primary">
+                                <td><strong>Total Contributions</strong></td>
+                                <td>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="total_employee" 
+                                               value="{{ contribution_settings.total_employee|default(11.45) }}" readonly>
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="total_employer" 
+                                               value="{{ contribution_settings.total_employer|default(14.95) }}" readonly>
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </td>
+                                <td><small class="text-muted">Automatically calculated</small></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i> Save Settings
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Help Card -->
+    <div class="card shadow mt-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">About Social Contributions</h5>
+        </div>
+        <div class="card-body">
+            <p>Social contributions are calculated based on the employee's gross salary:</p>
+            <ul>
+                <li><strong>Social:</strong> Social insurance contributions required by law.</li>
+                <li><strong>Gesy:</strong> National Health Insurance Scheme contributions.</li>
+                <li><strong>Social Cohesion Fund:</strong> Employer-only contribution for social programs.</li>
+                <li><strong>Redundancy Fund:</strong> Employer-only contribution for potential redundancy payments.</li>
+                <li><strong>Industrial Fund:</strong> Employer-only contribution for industrial training and development.</li>
+            </ul>
+            
+            <div class="alert alert-info">
+                <h6 class="alert-heading">Example Calculation:</h6>
+                <p class="mb-1">For an employee with a monthly gross salary of €2,000:</p>
+                <ul class="mb-0" id="example-calculation">
+                    <!-- Will be populated by JavaScript -->
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Calculate totals and update automatically
+    function calculateTotals() {
+        let totalEmployee = 0;
+        let totalEmployer = 0;
+        
+        // Social
+        totalEmployee += parseFloat(document.getElementById('social_employee').value) || 0;
+        totalEmployer += parseFloat(document.getElementById('social_employer').value) || 0;
+        
+        // Gesy
+        totalEmployee += parseFloat(document.getElementById('gesy_employee').value) || 0;
+        totalEmployer += parseFloat(document.getElementById('gesy_employer').value) || 0;
+        
+        // Social Cohesion Fund (employer only)
+        totalEmployer += parseFloat(document.getElementById('cohesion_employer').value) || 0;
+        
+        // Redundancy Fund (employer only)
+        totalEmployer += parseFloat(document.getElementById('redundancy_employer').value) || 0;
+        
+        // Industrial Fund (employer only)
+        totalEmployer += parseFloat(document.getElementById('industrial_employer').value) || 0;
+        
+        // Update totals
+        document.getElementById('total_employee').value = totalEmployee.toFixed(2);
+        document.getElementById('total_employer').value = totalEmployer.toFixed(2);
+        
+        // Update example calculation
+        updateExampleCalculation(totalEmployee, totalEmployer);
+    }
+    
+    // Update example calculation in help card
+    function updateExampleCalculation(empPct, emplPct) {
+        const exampleSalary = 2000; // Example monthly salary
+        
+        // Calculate individual contributions
+        const socialEmp = (exampleSalary * parseFloat(document.getElementById('social_employee').value) / 100).toFixed(2);
+        const socialEmpl = (exampleSalary * parseFloat(document.getElementById('social_employer').value) / 100).toFixed(2);
+        const gesyEmp = (exampleSalary * parseFloat(document.getElementById('gesy_employee').value) / 100).toFixed(2);
+        const gesyEmpl = (exampleSalary * parseFloat(document.getElementById('gesy_employer').value) / 100).toFixed(2);
+        const cohesionEmpl = (exampleSalary * parseFloat(document.getElementById('cohesion_employer').value) / 100).toFixed(2);
+        const redundancyEmpl = (exampleSalary * parseFloat(document.getElementById('redundancy_employer').value) / 100).toFixed(2);
+        const industrialEmpl = (exampleSalary * parseFloat(document.getElementById('industrial_employer').value) / 100).toFixed(2);
+        
+        // Total contributions
+        const totalEmpContrib = (exampleSalary * empPct / 100).toFixed(2);
+        const totalEmplContrib = (exampleSalary * emplPct / 100).toFixed(2);
+        const netPay = (exampleSalary - totalEmpContrib).toFixed(2);
+        const totalCost = (parseFloat(exampleSalary) + parseFloat(totalEmplContrib)).toFixed(2);
+        
+        // Update the example HTML
+        document.getElementById('example-calculation').innerHTML = `
+            <li><strong>Social:</strong> Employee €${socialEmp}, Employer €${socialEmpl}</li>
+            <li><strong>Gesy:</strong> Employee €${gesyEmp}, Employer €${gesyEmpl}</li>
+            <li><strong>Social Cohesion Fund:</strong> Employer €${cohesionEmpl}</li>
+            <li><strong>Redundancy Fund:</strong> Employer €${redundancyEmpl}</li>
+            <li><strong>Industrial Fund:</strong> Employer €${industrialEmpl}</li>
+            <li><strong>Total Contributions:</strong> Employee €${totalEmpContrib} (${empPct}%), Employer €${totalEmplContrib} (${emplPct}%)</li>
+            <li><strong>Net Pay (before tax):</strong> €${netPay}</li>
+            <li><strong>Total Cost to Employer:</strong> €${totalCost}</li>
+        `;
+    }
+    
+    // Add event listeners to all input fields
+    const inputFields = document.querySelectorAll('input[type="number"]:not([readonly])');
+    inputFields.forEach(input => {
+        input.addEventListener('input', calculateTotals);
+    });
+    
+    // Initialize calculations on page load
+    calculateTotals();
+    
+    // Form submission handler
+    document.getElementById('contribution-settings-form').addEventListener('submit', function(e) {
+        // You could add validation here if needed
+    });
+    
+    // Save button outside the form
+    document.querySelector('.save-all-settings').addEventListener('click', function() {
+        document.getElementById('contribution-settings-form').submit();
+    });
+});
+</script>
+{% endblock %} 

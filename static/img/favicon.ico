@@ -1,0 +1,12 @@
+This is a placeholder for favicon.ico.
+
+To create a custom favicon:
+1. Use an online favicon generator (e.g., favicon.io)
+2. Create a calendar-themed icon
+3. Download the .ico file
+4. Replace this file with your custom favicon
+5. Keep the filename as 'favicon.ico'
+
+Alternatively, you can use a pre-made favicon from a CDN by adding this line to your layout.html head section:
+
+<link rel="icon" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/favicon.ico"> 

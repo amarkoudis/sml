@@ -1,0 +1,20 @@
+CREATE TABLE employee_event_earnings (
+    employeeid INT,
+    eventid INT,
+    total_hours DECIMAL(10,2),
+    costperhour DECIMAL(10,2),
+    sellingperhour DECIMAL(10,2),
+    gross_earnings DECIMAL(10,2),
+    social_employee DECIMAL(10,2),
+    gesy_employee DECIMAL(10,2),
+    total_employee_contrib DECIMAL(10,2),
+    social_employer DECIMAL(10,2),
+    gesy_employer DECIMAL(10,2),
+    cohesion_employer DECIMAL(10,2),
+    redundancy_employer DECIMAL(10,2),
+    industrial_employer DECIMAL(10,2),
+    total_employer_contrib DECIMAL(10,2),
+    net_earnings DECIMAL(10,2),
+    total_cost DECIMAL(10,2),
+    PRIMARY KEY (employeeid, eventid)
+); 

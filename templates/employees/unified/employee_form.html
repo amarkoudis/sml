@@ -1,0 +1,646 @@
+{% extends 'layout.html' %}
+
+{% block title %}{% if is_edit_mode %}Edit{% else %}Add{% endif %} Employee{% endblock %}
+
+{% block styles %}
+<style>
+    /* Employee form specific styles */
+    .content-wrapper {
+        display: flex;
+        gap: 20px;
+    }
+    
+    .form-content {
+        flex: 1;
+        margin-left: 20px;
+        padding-bottom: 40px;
+        overflow-y: auto;
+        max-height: calc(100vh - 100px);
+    }
+    
+    /* Sidebar styles */
+    .content-wrapper .form-sidebar {
+        position: sticky;
+        top: 80px;
+        width: auto !important;
+        min-width: 240px;
+        height: calc(100vh - 120px);
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        z-index: 10;
+        align-self: flex-start;
+    }
+    
+    .content-wrapper .sidebar-header {
+        padding: 20px;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .content-wrapper .sidebar-title {
+        margin: 0;
+        color: #1e293b;
+        font-weight: 600;
+        display: block !important;
+    }
+    
+    .content-wrapper .sidebar-nav {
+        padding: 10px 0;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+    }
+    
+    .content-wrapper .nav-item {
+        display: flex !important;
+        align-items: center;
+        padding: 12px 20px;
+        color: #475569;
+        text-decoration: none;
+        transition: all 0.2s;
+        font-size: 0.95rem;
+        border-left: 3px solid transparent;
+        justify-content: flex-start !important;
+    }
+    
+    .content-wrapper .nav-item:hover {
+        background: #f8fafc;
+        color: #1e293b;
+    }
+    
+    .content-wrapper .nav-item.active {
+        background: #f0f7ff;
+        color: #2563eb;
+        border-left: 3px solid #2563eb;
+        font-weight: 500;
+    }
+    
+    .content-wrapper .nav-item i {
+        width: 20px;
+        margin-right: 12px !important;
+        font-size: 1rem;
+        text-align: center;
+    }
+    
+    .content-wrapper .nav-text {
+        display: inline-block !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        flex: 1;
+    }
+    
+    /* Card styles */
+    .modern-card {
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 40px;
+    }
+    
+    .card-header {
+        padding: 20px;
+        border-bottom: 1px solid #e0e0e0;
+        background: #fff;
+    }
+    
+    .card-header h4 {
+        margin: 0;
+        color: #1e293b;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+    
+    .card-body {
+        padding: 20px;
+    }
+    
+    /* Form styles */
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    
+    .form-group label {
+        font-weight: 500;
+        color: #475569;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-control {
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 0.75rem;
+        transition: all 0.2s;
+    }
+    
+    .form-control:focus {
+        border-color: #4f97fb;
+        box-shadow: 0 0 0 2px rgba(79, 151, 251, 0.1);
+    }
+    
+    /* Button styles */
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 6px;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+    
+    .btn-primary {
+        background: #4f97fb;
+        border-color: #4f97fb;
+    }
+    
+    .btn-primary:hover {
+        background: #2d7ff7;
+        border-color: #2d7ff7;
+    }
+    
+    /* Add smooth scrolling */
+    html {
+        scroll-behavior: smooth;
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Page loaded');
+    
+    // Debug log for companies and banks data
+    try {
+        {% if companies %}
+        var companies = JSON.parse('{{ companies|tojson_safe|safe }}');
+        console.log('Companies:', companies);
+        {% endif %}
+        
+        {% if banks %}
+        var banks = JSON.parse('{{ banks|tojson_safe|safe }}');
+        console.log('Banks:', banks);
+        {% endif %}
+        
+        {% if roles %}
+        var roles = JSON.parse('{{ roles|tojson_safe|safe }}');
+        console.log('Roles:', roles);
+        {% endif %}
+        
+        {% if enums %}
+        var enums = JSON.parse('{{ enums|tojson_safe|safe }}');
+        console.log('Enums:', enums);
+        {% endif %}
+        
+        {% if employee %}
+        var employee = JSON.parse('{{ employee|tojson_safe|safe }}');
+        console.log('Employee data:', employee);
+        {% endif %}
+    } catch (e) {
+        console.error('Error parsing JSON data:', e);
+    }
+    
+    // Debug log for dropdown elements
+    var companySelect = document.getElementById('companyid');
+    var bankSelect = document.getElementById('bankid');
+    console.log('Company select element:', companySelect);
+    console.log('Bank select element:', bankSelect);
+    
+    // Function to update transaction type
+    function updateTransactionType() {
+        console.log('Updating transaction type');
+        var companySelect = document.getElementById('companyid');
+        var bankSelect = document.getElementById('bankid');
+        var transactionTypeInput = document.getElementById('transactiontype');
+        
+        if (!companySelect || !bankSelect || !transactionTypeInput) {
+            console.error('One or more required elements not found');
+            return;
+        }
+        
+        var selectedCompanyOption = companySelect.options[companySelect.selectedIndex];
+        var companyBankId = selectedCompanyOption ? selectedCompanyOption.getAttribute('data-bankid') : null;
+        var selectedBankId = bankSelect.value;
+        
+        console.log('Company bank ID:', companyBankId);
+        console.log('Selected bank ID:', selectedBankId);
+        
+        // Set transaction type based on bank selection
+        if (companyBankId && selectedBankId && companyBankId === selectedBankId) {
+            transactionTypeInput.value = 'B';
+            console.log('Set transaction type to B');
+        } else {
+            transactionTypeInput.value = 'S';
+            console.log('Set transaction type to S');
+        }
+    }
+    
+    // Add event listeners
+    if (companySelect) {
+        companySelect.addEventListener('change', updateTransactionType);
+        console.log('Added change listener to company select');
+    }
+    
+    if (bankSelect) {
+        bankSelect.addEventListener('change', updateTransactionType);
+        console.log('Added change listener to bank select');
+    }
+    
+    // Call updateTransactionType on page load if editing existing employee
+    updateTransactionType();
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    {% include 'employees/unified/sidebar.html' %}
+    
+    <div class="form-content">
+        <form id="employee-form" method="POST" action="{% if is_edit_mode %}{{ url_for('edit_employee', employee_id=employee.employeeid) }}{% else %}{{ url_for('create_employee') }}{% endif %}" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            {% if is_edit_mode %}
+            <input type="hidden" name="employee_id" value="{{ employee.employeeid }}">
+            {% endif %}
+            
+            <!-- Basic Information Section -->
+            <div id="section-basic" class="modern-card">
+                <div class="card-header" id="basic">
+                    <h4>Basic Information</h4>
+                </div>
+                <div class="card-body">
+                    <input type="hidden" id="transactiontype" name="transactiontype" value="{{ employee.transactiontype if employee else 'S' }}">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="employeename">Full Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="employeename" name="employeename" 
+                                       value="{{ employee.employeename if employee else '' }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="gender">Gender <span class="text-danger">*</span></label>
+                                <select class="form-control" id="gender" name="gender" required>
+                                    <option value="">Select Gender</option>
+                                    <option value="Male" {% if employee and employee.gender == 'Male' %}selected{% endif %}>Male</option>
+                                    <option value="Female" {% if employee and employee.gender == 'Female' %}selected{% endif %}>Female</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="age">Age <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="age" name="age" 
+                                       value="{{ employee.age if employee else '30' }}" required min="18" max="100">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Contact Information Section -->
+            <div id="section-contact" class="modern-card">
+                <div class="card-header" id="contact">
+                    <h4>Contact Information</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="email">Email <span class="text-danger">*</span></label>
+                                <input type="email" class="form-control" id="email" name="email" 
+                                       value="{{ employee.email if employee else '' }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="tel">Phone</label>
+                                <input type="text" class="form-control" id="tel" name="tel" 
+                                       value="{{ employee.tel if employee else '' }}">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="address">Address <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="address" name="address" 
+                                       value="{{ employee.address if employee else 'Default Address' }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="address2">Address Line 2</label>
+                                <input type="text" class="form-control" id="address2" name="address2" 
+                                       value="{{ employee.address2 if employee else '' }}">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="city">City <span class="text-danger">*</span></label>
+                                <select class="form-control" id="city" name="city" required>
+                                    <option value="">Select City</option>
+                                    <option value="Nicosia" {% if employee and employee.city == 'Nicosia' %}selected{% endif %}>Nicosia</option>
+                                    <option value="Limassol" {% if employee and employee.city == 'Limassol' %}selected{% endif %}>Limassol</option>
+                                    <option value="Larnaca" {% if employee and employee.city == 'Larnaca' %}selected{% endif %}>Larnaca</option>
+                                    <option value="Famagusta" {% if employee and employee.city == 'Famagusta' %}selected{% endif %}>Famagusta</option>
+                                    <option value="Paphos" {% if employee and employee.city == 'Paphos' %}selected{% endif %}>Paphos</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="zipcode">Zip Code</label>
+                                <input type="text" class="form-control" id="zipcode" name="zipcode" 
+                                       value="{{ employee.zipcode if employee else '' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Employment Details Section -->
+            <div id="section-employment" class="modern-card">
+                <div class="card-header" id="employment">
+                    <h4>Employment Details</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="employeeroleid">Role <span class="text-danger">*</span></label>
+                                <select class="form-control" id="employeeroleid" name="employeeroleid" required>
+                                    <option value="">Select Role</option>
+                                    {% for role in roles %}
+                                    <option value="{{ role.employeeroleid }}" 
+                                            {% if employee and employee.employeeroleid == role.employeeroleid %}selected{% endif %}>
+                                        {{ role.employeerolename }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="nationality">Nationality</label>
+                                <select class="form-control" id="nationality" name="nationality">
+                                    <option value="Cypriot" {% if employee and employee.nationality == 'Cypriot' %}selected{% endif %}>Cypriot</option>
+                                    <option value="EU" {% if employee and employee.nationality == 'EU' %}selected{% endif %}>EU</option>
+                                    <option value="Foreigner" {% if employee and employee.nationality == 'Foreigner' %}selected{% endif %}>Foreigner</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="employeeenglishrating">English Rating</label>
+                                <select class="form-control" id="employeeenglishrating" name="employeeenglishrating">
+                                    <option value="1" {% if employee and employee.employeeenglishrating == '1' %}selected{% endif %}>1 - Basic</option>
+                                    <option value="2" {% if employee and employee.employeeenglishrating == '2' %}selected{% endif %}>2 - Elementary</option>
+                                    <option value="3" {% if employee and employee.employeeenglishrating == '3' %}selected{% endif %}>3 - Intermediate</option>
+                                    <option value="4" {% if employee and employee.employeeenglishrating == '4' %}selected{% endif %}>4 - Advanced</option>
+                                    <option value="5" {% if employee and employee.employeeenglishrating == '5' %}selected{% endif %}>5 - Proficient</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="employeeExperienceRating">Experience Rating</label>
+                                <select class="form-control" id="employeeExperienceRating" name="employeeExperienceRating">
+                                    <option value="1" {% if employee and employee.employeeExperienceRating == '1' %}selected{% endif %}>1 - Beginner</option>
+                                    <option value="2" {% if employee and employee.employeeExperienceRating == '2' %}selected{% endif %}>2 - Junior</option>
+                                    <option value="3" {% if employee and employee.employeeExperienceRating == '3' %}selected{% endif %}>3 - Intermediate</option>
+                                    <option value="4" {% if employee and employee.employeeExperienceRating == '4' %}selected{% endif %}>4 - Senior</option>
+                                    <option value="5" {% if employee and employee.employeeExperienceRating == '5' %}selected{% endif %}>5 - Expert</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="passportid">Passport/ID Number <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="passportid" name="passportid" 
+                                       value="{{ employee.passportid if employee else 'PASS' }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="SocialInsuranceno">Social Insurance Number</label>
+                                <input type="text" class="form-control" id="SocialInsuranceno" name="SocialInsuranceno" 
+                                       value="{{ employee.SocialInsuranceno if employee else '' }}">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="status">Status</label>
+                                <select class="form-control" id="status" name="status">
+                                    <option value="Active" {% if employee and employee.status == 'Active' %}selected{% endif %}>Active</option>
+                                    <option value="Inactive" {% if employee and employee.status == 'Inactive' %}selected{% endif %}>Inactive</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="contactmethod">Preferred Contact Method</label>
+                                <select class="form-control" id="contactmethod" name="contactmethod">
+                                    <option value="email" {% if employee and employee.contactmethod == 'email' %}selected{% endif %}>Email</option>
+                                    <option value="sms" {% if employee and employee.contactmethod == 'sms' %}selected{% endif %}>SMS</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Financial Information Section -->
+            <div id="section-financial" class="modern-card">
+                <div class="card-header" id="financial">
+                    <h4>Financial Information</h4>
+                </div>
+                <div class="card-body">
+                    <input type="hidden" id="currency" name="currency" value="EUR">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="companyid">Company</label>
+                                <select class="form-control" id="companyid" name="companyid" onchange="updateTransactionType()">
+                                    <option value="">Select Company</option>
+                                    {% if companies %}
+                                        {% for company in companies %}
+                                        <option value="{{ company.companyid }}" 
+                                                data-bankid="{{ company.bankid }}"
+                                                {% if employee and employee.companyid == company.companyid %}selected{% endif %}>
+                                            {{ company.companyname }}
+                                        </option>
+                                        {% endfor %}
+                                    {% endif %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="bankid">Bank</label>
+                                <select class="form-control" id="bankid" name="bankid" onchange="updateTransactionType()">
+                                    <option value="">Select Bank</option>
+                                    {% if banks %}
+                                        {% for bank in banks %}
+                                        <option value="{{ bank.bankid }}" 
+                                                {% if employee and employee.bankid == bank.bankid %}selected{% endif %}>
+                                            {{ bank.bankname }}
+                                        </option>
+                                        {% endfor %}
+                                    {% endif %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="swiftno">SWIFT/BIC Code</label>
+                                <input type="text" class="form-control" id="swiftno" name="swiftno" 
+                                       value="{{ employee.swiftno if employee else '' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Additional Information Section -->
+            <div id="section-additional" class="modern-card">
+                <div class="card-header" id="additional">
+                    <h4>Additional Information</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <h5 class="mb-3 text-muted">Employment Status</h5>
+                            <div class="d-flex flex-column gap-3">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="currentworkplace" name="currentworkplace" value="Yes" 
+                                           {% if employee and employee.currentworkplace == 'Yes' %}checked{% endif %}>
+                                    <label class="form-check-label" for="currentworkplace">
+                                        <i class="fas fa-briefcase me-2 text-primary"></i>Currently Working
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="Interestforfulltime" name="Interestforfulltime" value="Yes" 
+                                           {% if employee and employee.Interestforfulltime == 'Yes' %}checked{% endif %}>
+                                    <label class="form-check-label" for="Interestforfulltime">
+                                        <i class="fas fa-business-time me-2 text-primary"></i>Interested in Full-time
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="Repeater" name="Repeater" value="Yes" 
+                                           {% if employee and employee.Repeater == 'Yes' %}checked{% endif %}>
+                                    <label class="form-check-label" for="Repeater">
+                                        <i class="fas fa-redo me-2 text-primary"></i>Repeat Employee
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <h5 class="mb-3 text-muted">Compliance & Documentation</h5>
+                            <div class="d-flex flex-column gap-3">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="AgreementStatus" name="AgreementStatus" value="Yes" 
+                                           {% if employee and employee.AgreementStatus == 'Yes' %}checked{% endif %}>
+                                    <label class="form-check-label" for="AgreementStatus">
+                                        <i class="fas fa-file-signature me-2 text-success"></i>Agreement Signed
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="CriminalRecordStatus" name="CriminalRecordStatus" value="Yes" 
+                                           {% if employee and employee.CriminalRecordStatus == 'Yes' %}checked{% endif %}>
+                                    <label class="form-check-label" for="CriminalRecordStatus">
+                                        <i class="fas fa-clipboard-check me-2 text-success"></i>Criminal Record Check
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="TrainingStatus" name="TrainingStatus" value="Yes" 
+                                           {% if employee and employee.TrainingStatus == 'Yes' %}checked{% endif %}>
+                                    <label class="form-check-label" for="TrainingStatus">
+                                        <i class="fas fa-graduation-cap me-2 text-success"></i>Training Completed
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5 class="mb-3 text-muted">Physical Attributes</h5>
+                            <div class="d-flex flex-column gap-3">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="Tattoo" name="Tattoo" value="Yes" 
+                                           {% if employee and employee.Tattoo == 'Yes' %}checked{% endif %}>
+                                    <label class="form-check-label" for="Tattoo">
+                                        <i class="fas fa-paint-brush me-2 text-info"></i>Has Visible Tattoos
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Documents Section -->
+            <div id="section-documents" class="modern-card">
+                <div class="card-header" id="documents">
+                    <h4>Documents</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-12 mb-4">
+                            <h5 class="mb-3 text-muted">Employment Agreement</h5>
+                            
+                            {% if employee and employee.EmploymentAgreement %}
+                            <div class="mb-3">
+                                <div class="d-flex align-items-center mb-3">
+                                    <i class="fas fa-file-pdf text-danger me-2 fa-2x"></i>
+                                    <div>
+                                        <strong>Current Agreement</strong>
+                                        <div class="text-muted">Last updated: {{ employee.updated_at|default('Unknown', true) }}</div>
+                                    </div>
+                                </div>
+                                <a href="{{ url_for('view_employee_agreement', employee_id=employee.employeeid) }}" target="_blank" class="btn btn-outline-primary me-2">
+                                    <i class="fas fa-eye me-2"></i> View Agreement
+                                </a>
+                                <button type="button" class="btn btn-outline-danger" data-bs-toggle="collapse" data-bs-target="#replaceAgreement">
+                                    <i class="fas fa-exchange-alt me-2"></i> Replace
+                                </button>
+                                
+                                <div class="collapse mt-3" id="replaceAgreement">
+                                    <div class="card card-body bg-light">
+                                        <div class="form-group">
+                                            <label for="EmploymentAgreement">Upload New Agreement (PDF only)</label>
+                                            <input type="file" class="form-control" id="EmploymentAgreement" name="EmploymentAgreement" accept="application/pdf">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="form-group">
+                                <label for="EmploymentAgreement">Upload Agreement (PDF only)</label>
+                                <input type="file" class="form-control" id="EmploymentAgreement" name="EmploymentAgreement" accept="application/pdf">
+                                <small class="text-muted">Upload the signed employment agreement document</small>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %} 

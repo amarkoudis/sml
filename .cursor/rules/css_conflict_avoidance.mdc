@@ -1,0 +1,16 @@
+---
+description: "Avoid CSS conflicts and enforce scoping rules"
+globs: "**/*.css"
+alwaysApply: false
+---
+
+# CSS Guidelines for AI
+
+To avoid CSS conflicts:
+- Use BEM or component-based prefixes for class names.
+- Do not modify styles in global.css unless necessary.
+- Avoid using `!important` unless explicitly directed.
+- Prefer CSS modules or utility-first CSS like Tailwind.
+- Do not create generic class names like `.button`, `.container`, or `.title`.
+
+These rules ensure maintainability and style isolation across components.

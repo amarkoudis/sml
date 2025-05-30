@@ -1,0 +1,219 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="container-fluid">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">
+                <i class="fas fa-user-plus text-primary"></i>
+                Assign Employees to {{ shift.shiftname }}
+            </h1>
+            <a href="{{ url_for('edit_event_unified', event_id=shift.eventid) }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Event
+            </a>
+        </div>
+
+        <!-- Shift Info Card -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Event:</strong> {{ shift.EventName }}</p>
+                        <p><strong>Shift:</strong> {{ shift.shiftname }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Start:</strong> {{ shift.shiftstart.strftime('%Y-%m-%d %H:%M') }}</p>
+                        <p><strong>End:</strong> {{ shift.shiftend.strftime('%Y-%m-%d %H:%M') }}</p>
+                        <p><strong>Type:</strong> 
+                            <span class="badge {% if shift.shifttype == 'Full' %}badge-primary{% else %}badge-info{% endif %}">
+                                {{ shift.shifttype }}
+                            </span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <form method="POST" class="needs-validation" novalidate>
+                    <div class="table-responsive">
+                        <table class="table modern-table table-striped table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Select</th>
+                                    <th>Name</th>
+                                    <th>Role</th>
+                                    <th>Gender</th>
+                                    {% if shift.shifttype == 'Partial' %}
+                                    <th>Hours</th>
+                                    {% endif %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for employee in employees %}
+                                <tr>
+                                    <td>
+                                        <div class="custom-control custom-checkbox">
+                                            <input type="checkbox" class="custom-control-input employee-checkbox" 
+                                                   id="employee_{{ employee.employeeid }}" 
+                                                   name="employee_ids[]" 
+                                                   value="{{ employee.employeeid }}"
+                                                   {% if employee.employeeid in assigned_employees %}checked{% endif %}>
+                                            <label class="custom-control-label" for="employee_{{ employee.employeeid }}"></label>
+                                        </div>
+                                    </td>
+                                    <td>{{ employee.employeename }}</td>
+                                    <td>{{ employee.employeerolename or 'Not Assigned' }}</td>
+                                    <td>{{ employee.gender }}</td>
+                                    {% if shift.shifttype == 'Partial' %}
+                                    <td>
+                                        <input type="number" class="form-control hours-input" 
+                                               name="hours[]" 
+                                               min="0.5" 
+                                               step="0.5"
+                                               value="{{ assigned_employees[employee.employeeid].hours if employee.employeeid in assigned_employees else '' }}"
+                                               {% if employee.employeeid not in assigned_employees %}disabled{% endif %}>
+                                    </td>
+                                    {% endif %}
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="{% if shift.shifttype == 'Partial' %}5{% else %}4{% endif %}" class="text-center">
+                                        No employees found.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <button type="button" class="btn btn-outline-primary mt-3" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">
+                        <i class="fas fa-user-plus"></i> Add Employee
+                    </button>
+                    <!-- Add Employee Modal -->
+                    <div class="modal fade" id="addEmployeeModal" tabindex="-1" aria-labelledby="addEmployeeModalLabel" aria-hidden="true">
+                      <div class="modal-dialog modal-xl" style="max-width: 98vw;">
+                        <div class="modal-content">
+                          <div class="modal-header">
+                            <h5 class="modal-title" id="addEmployeeModalLabel">Add Employees to Shift</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                          </div>
+                          <div class="modal-body">
+                            <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
+                              <table class="table table-bordered table-hover">
+                                <thead>
+                                  <tr>
+                                    <th>Select</th>
+                                    <th>Name</th>
+                                    <th>Role</th>
+                                    <th>Gender</th>
+                                  </tr>
+                                </thead>
+                                <tbody id="availableEmployeesBody">
+                                  <!-- Will be filled by JS -->
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                          <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-primary" id="addSelectedEmployeesBtn">Add Selected</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 
+                        <strong>Note:</strong> 
+                        {% if shift.shifttype == 'Partial' %}
+                        For partial shifts, you must specify the number of hours for each assigned employee.
+                        {% else %}
+                        For full shifts, all selected employees will work the entire shift duration.
+                        {% endif %}
+                    </div>
+                    <!-- Form Actions -->
+                    <div class="form-actions mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save Assignments
+                        </button>
+                        <a href="{{ url_for('edit_event_unified', event_id=shift.eventid) }}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Enable/disable hours input based on checkbox
+        const checkboxes = document.querySelectorAll('.employee-checkbox');
+        const hoursInputs = document.querySelectorAll('.hours-input');
+        
+        checkboxes.forEach((checkbox, index) => {
+            checkbox.addEventListener('change', function() {
+                if (hoursInputs[index]) {
+                    hoursInputs[index].disabled = !this.checked;
+                    if (!this.checked) {
+                        hoursInputs[index].value = '';
+                    }
+                }
+            });
+        });
+    });
+
+    // Fetch available employees for the modal
+    document.addEventListener('DOMContentLoaded', function() {
+        var addEmployeeModal = document.getElementById('addEmployeeModal');
+        if (addEmployeeModal) {
+            addEmployeeModal.addEventListener('show.bs.modal', function() {
+                fetch('/api/shifts/{{ shift.shiftid }}/available-employees')
+                    .then(response => response.json())
+                    .then(data => {
+                        var tbody = document.getElementById('availableEmployeesBody');
+                        tbody.innerHTML = '';
+                        if (data.length === 0) {
+                            var row = document.createElement('tr');
+                            var cell = document.createElement('td');
+                            cell.colSpan = 4;
+                            cell.className = 'text-center';
+                            cell.textContent = 'No available employees.';
+                            row.appendChild(cell);
+                            tbody.appendChild(row);
+                        } else {
+                            data.forEach(function(emp) {
+                                var row = document.createElement('tr');
+                                row.innerHTML = `
+                                    <td><input type="checkbox" class="form-check-input available-employee-checkbox" value="${emp.employeeid}"></td>
+                                    <td>${emp.employeename}</td>
+                                    <td>${emp.employeerolename || 'Not Assigned'}</td>
+                                    <td>${emp.gender}</td>
+                                `;
+                                tbody.appendChild(row);
+                            });
+                        }
+                    });
+            });
+        }
+        // Add selected employees to the main table
+        document.getElementById('addSelectedEmployeesBtn')?.addEventListener('click', function() {
+            var checkboxes = document.querySelectorAll('.available-employee-checkbox:checked');
+            checkboxes.forEach(function(checkbox) {
+                var empId = checkbox.value;
+                // Check the corresponding checkbox in the main table
+                var mainCheckbox = document.getElementById('employee_' + empId);
+                if (mainCheckbox) {
+                    mainCheckbox.checked = true;
+                    mainCheckbox.dispatchEvent(new Event('change'));
+                }
+            });
+            // Close modal
+            var modal = bootstrap.Modal.getInstance(document.getElementById('addEmployeeModal'));
+            modal.hide();
+        });
+    });
+</script>
+{% endblock %} 
