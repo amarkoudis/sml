@@ -52,8 +52,6 @@ pyphen==0.17.2
 python-dateutil==2.9.0.post0
 python-dotenv==1.1.0
 pytz==2025.1
-pywin32==310
-pywin32-ctypes==0.2.3
 reportlab==4.4.1
 requests==2.32.3
 setuptools==76.0.0
