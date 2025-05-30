@@ -1,10 +1,8 @@
 from flask import Flask
-from flask_mysqldb import MySQL
 import pymysql
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
-mysql = MySQL(app)
 
 # MySQL configurations
 app.config['MYSQL_HOST'] = 'localhost'
