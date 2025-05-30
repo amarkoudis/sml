@@ -3223,3 +3223,31 @@
 2025-05-26 12:04:41,553 - werkzeug - INFO - 127.0.0.1 - - [26/May/2025 12:04:41] "GET /static/css/style.css HTTP/1.1" 200 -
 2025-05-26 12:04:41,557 - werkzeug - INFO - 127.0.0.1 - - [26/May/2025 12:04:41] "GET /static/js/main.js HTTP/1.1" 200 -
 2025-05-26 12:04:41,683 - werkzeug - INFO - 127.0.0.1 - - [26/May/2025 12:04:41] "GET /static/img/favicon.ico HTTP/1.1" 200 -
+2025-05-30 10:02:32,173 - root - INFO - Starting the Flask application...
+2025-05-30 10:02:32,282 - werkzeug - INFO -  * Restarting with stat
+2025-05-30 10:02:33,957 - root - INFO - Starting the Flask application...
+2025-05-30 10:02:33,966 - werkzeug - WARNING -  * Debugger is active!
+2025-05-30 10:02:33,971 - werkzeug - INFO -  * Debugger PIN: 774-269-235
+2025-05-30 10:02:34,344 - werkzeug - INFO -  * Running on http://127.0.0.1:5000/ (Press CTRL+C to quit)
+2025-05-30 10:02:38,404 - root - INFO - Login route accessed.
+2025-05-30 10:02:38,582 - werkzeug - INFO - 127.0.0.1 - - [30/May/2025 10:02:38] "GET / HTTP/1.1" 200 -
+2025-05-30 10:02:38,674 - werkzeug - INFO - 127.0.0.1 - - [30/May/2025 10:02:38] "GET /static/css/style.css HTTP/1.1" 200 -
+2025-05-30 10:02:38,682 - werkzeug - INFO - 127.0.0.1 - - [30/May/2025 10:02:38] "GET /static/js/main.js HTTP/1.1" 200 -
+2025-05-30 10:02:38,790 - werkzeug - INFO - 127.0.0.1 - - [30/May/2025 10:02:38] "GET /static/img/favicon.ico HTTP/1.1" 200 -
+2025-05-30 10:02:40,394 - root - INFO - Login route accessed.
+2025-05-30 10:02:44,538 - werkzeug - INFO - 127.0.0.1 - - [30/May/2025 10:02:44] "POST /login HTTP/1.1" 200 -
+2025-05-30 10:02:44,564 - werkzeug - INFO - 127.0.0.1 - - [30/May/2025 10:02:44] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-30 10:02:44,566 - werkzeug - INFO - 127.0.0.1 - - [30/May/2025 10:02:44] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-30 10:02:44,620 - werkzeug - INFO - 127.0.0.1 - - [30/May/2025 10:02:44] "[36mGET /static/img/favicon.ico HTTP/1.1[0m" 304 -
+2025-05-30 10:09:28,235 - root - INFO - Login route accessed.
+2025-05-30 10:09:28,240 - werkzeug - INFO - 127.0.0.1 - - [30/May/2025 10:09:28] "POST /login HTTP/1.1" 200 -
+2025-05-30 10:09:28,266 - werkzeug - INFO - 127.0.0.1 - - [30/May/2025 10:09:28] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-30 10:09:28,269 - werkzeug - INFO - 127.0.0.1 - - [30/May/2025 10:09:28] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-30 10:09:28,318 - werkzeug - INFO - 127.0.0.1 - - [30/May/2025 10:09:28] "[36mGET /static/img/favicon.ico HTTP/1.1[0m" 304 -
+2025-05-30 10:32:27,044 - root - INFO - Login route accessed.
+2025-05-30 10:32:27,255 - werkzeug - INFO - 127.0.0.1 - - [30/May/2025 10:32:27] "[32mPOST /login HTTP/1.1[0m" 302 -
+2025-05-30 10:32:27,261 - root - INFO - Home route accessed.
+2025-05-30 10:32:27,354 - werkzeug - INFO - 127.0.0.1 - - [30/May/2025 10:32:27] "GET /home HTTP/1.1" 200 -
+2025-05-30 10:32:27,395 - werkzeug - INFO - 127.0.0.1 - - [30/May/2025 10:32:27] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-30 10:32:27,402 - werkzeug - INFO - 127.0.0.1 - - [30/May/2025 10:32:27] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-30 10:32:27,548 - werkzeug - INFO - 127.0.0.1 - - [30/May/2025 10:32:27] "[36mGET /static/img/favicon.ico HTTP/1.1[0m" 304 -
