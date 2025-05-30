@@ -21,7 +21,6 @@ from datetime import datetime, timedelta, date, timezone
 import pymysql
 from werkzeug.utils import secure_filename
 from flask_mail import Mail
-from flask_mysqldb import MySQL
 import secrets
 from pymysql.cursors import DictCursor
 from flask_wtf.csrf import CSRFProtect, generate_csrf
