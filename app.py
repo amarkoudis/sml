@@ -19,6 +19,7 @@ from config import app, get_mysql_connection
 from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import datetime, timedelta, date, timezone
 import pymysql
+from flask_mysqldb import MySQL  # Added MySQL import
 from werkzeug.utils import secure_filename
 from flask_mail import Mail
 import secrets
