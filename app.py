@@ -15,6 +15,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, make_response, send_file
+from markupsafe import Markup
 from config import app, get_mysql_connection
 from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import datetime, timedelta, date, timezone
