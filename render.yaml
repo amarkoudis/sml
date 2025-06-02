@@ -3,13 +3,13 @@ services:
     name: sml
     env: python
     buildCommand: |
-      python -m venv venv
-      . venv/bin/activate
-      python -m pip install --upgrade pip
+      python -m venv /opt/render/project/src/.venv
+      . /opt/render/project/src/.venv/bin/activate
+      pip install --upgrade pip
       pip install -r requirements.txt
     startCommand: |
-      . venv/bin/activate
-      venv/bin/gunicorn app:app --bind=0.0.0.0:$PORT
+      . /opt/render/project/src/.venv/bin/activate && 
+      /opt/render/project/src/.venv/bin/gunicorn --bind 0.0.0.0:$PORT app:app
     envVars:
       - key: PYTHON_VERSION
         value: 3.13.0
@@ -25,3 +25,5 @@ services:
         sync: false
       - key: PYTHONPATH
         value: /opt/render/project/src
+      - key: PATH
+        value: /opt/render/project/src/.venv/bin:$PATH
