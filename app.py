@@ -1,19 +1,27 @@
 import logging
 import os
 import platform
+import sys
 
 # Configure logging
+log_level = os.getenv('LOG_LEVEL', 'INFO')
+log_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+
+# Configure logging to output to both file and stdout
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=getattr(logging, log_level),
+    format=log_format,
     handlers=[
-        logging.FileHandler('app.log'),
-        logging.StreamHandler()
+        # Log to stdout (will be captured by Render)
+        logging.StreamHandler(sys.stdout),
+        # Also keep file logging for local development
+        logging.FileHandler('app.log')
     ]
 )
 
 # Create logger
 logger = logging.getLogger(__name__)
+logger.info(f'Starting application with log level: {log_level}')
 
 # Windows-specific imports
 WINDOWS = platform.system() == 'Windows'
