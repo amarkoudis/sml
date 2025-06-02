@@ -3279,3 +3279,15 @@
 2025-06-02 10:00:59,802 - werkzeug - WARNING -  * Debugger is active!
 2025-06-02 10:00:59,808 - werkzeug - INFO -  * Debugger PIN: 774-269-235
 2025-06-02 10:00:59,950 - werkzeug - INFO -  * Running on http://127.0.0.1:5000/ (Press CTRL+C to quit)
+2025-06-02 10:09:18,732 - werkzeug - INFO -  * Detected change in 'C:\\SML\\config.py', reloading
+2025-06-02 10:09:19,061 - werkzeug - INFO -  * Restarting with stat
+2025-06-02 10:09:20,742 - root - INFO - Starting the Flask application...
+2025-06-02 10:09:20,751 - werkzeug - WARNING -  * Debugger is active!
+2025-06-02 10:09:20,755 - werkzeug - INFO -  * Debugger PIN: 774-269-235
+2025-06-02 10:09:20,910 - werkzeug - INFO -  * Running on http://127.0.0.1:5000/ (Press CTRL+C to quit)
+2025-06-02 10:18:55,174 - werkzeug - INFO -  * Detected change in 'C:\\SML\\wsgi.py', reloading
+2025-06-02 10:18:55,358 - werkzeug - INFO -  * Restarting with stat
+2025-06-02 10:18:56,759 - root - INFO - Starting the Flask application...
+2025-06-02 10:18:56,766 - werkzeug - WARNING -  * Debugger is active!
+2025-06-02 10:18:56,770 - werkzeug - INFO -  * Debugger PIN: 774-269-235
+2025-06-02 10:18:56,913 - werkzeug - INFO -  * Running on http://127.0.0.1:5000/ (Press CTRL+C to quit)

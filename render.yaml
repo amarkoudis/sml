@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: sml
+    env: python
+    buildCommand: |
+      python -m venv venv
+      . venv/bin/activate
+      python -m pip install --upgrade pip
+      pip install -r requirements.txt
+    startCommand: |
+      . venv/bin/activate
+      venv/bin/gunicorn app:app --bind=0.0.0.0:$PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.0
+      - key: MYSQL_HOST
+        sync: false
+      - key: MYSQL_USER
+        sync: false
+      - key: MYSQL_PASSWORD
+        sync: false
+      - key: MYSQL_DB
+        sync: false
+      - key: SECRET_KEY
+        sync: false
+      - key: PYTHONPATH
+        value: /opt/render/project/src
