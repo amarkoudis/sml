@@ -1,1 +1,1 @@
-web: . /opt/render/project/src/.venv/bin/activate && /opt/render/project/src/.venv/bin/gunicorn --bind 0.0.0.0:$PORT app:app 
+web: gunicorn app:app --bind 0.0.0.0:$PORT 
